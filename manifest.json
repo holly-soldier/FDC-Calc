@@ -8,8 +8,13 @@
     "orientation": "portrait",
     "icons": [
         {
-            "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/JavaScript-logo.png/192px-JavaScript-logo.png",
+            "src": "./icon3.png",
             "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "./icon3.png",
+            "sizes": "512x512",
             "type": "image/png"
         }
     ]
