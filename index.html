@@ -112,16 +112,14 @@
           <span style="font-size:0.9rem; font-weight:bold; color:var(--primary);">🔭 極座標から目標を算出 ▼</span>
         </div>
         <div id="fdc-polar-area" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color);">
-          
           <label>FO (観測所) を選択</label>
           <div class="flex" style="margin-bottom:10px;">
             <select id="polar-fo-select" onchange="loadFOForPolar()"></select>
             <button class="btn-gray" onclick="updateFODropdowns()" style="width:auto; padding:10px; margin-bottom:12px;">🔄</button>
           </div>
-
           <div class="flex">
-            <div><label>FO E座標</label><input type="number" id="polar-fo-e"></div>
-            <div><label>FO N座標</label><input type="number" id="polar-fo-n"></div>
+            <div><label>FO E座標</label><input type="number" id="polar-fo-e" onchange="formatCoord(this)"></div>
+            <div><label>FO N座標</label><input type="number" id="polar-fo-n" onchange="formatCoord(this)"></div>
           </div>
           <div class="flex">
             <div><label>観測方位角 (mil)</label><input type="number" id="polar-azm" placeholder="例: 3200"></div>
@@ -139,8 +137,8 @@
         </div>
       </div>
       <div class="flex">
-        <div><label>E座標 (5桁)</label><input type="number" id="tgt-e" onchange="autoSelectCharge()"></div>
-        <div><label>N座標 (5桁)</label><input type="number" id="tgt-n" onchange="autoSelectCharge()"></div>
+        <div><label>E座標 (3〜5桁)</label><input type="number" id="tgt-e" onchange="formatCoord(this); autoSelectCharge()"></div>
+        <div><label>N座標 (3〜5桁)</label><input type="number" id="tgt-n" onchange="formatCoord(this); autoSelectCharge()"></div>
       </div>
       <label>装薬 (Charge) <span style="font-size: 0.75rem; color: #888;">※距離に応じて自動選択</span></label>
       <select id="charge-select">
@@ -154,6 +152,14 @@
     <div class="card" id="fdc-result-card" style="display: none;">
       <h2 style="margin-bottom: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">射撃諸元 (3個分隊)</h2>
       
+      <div id="global-correction-prompt" class="hidden" style="background:var(--warning); color:#fff; padding:10px; border-radius:5px; margin-bottom:10px;">
+        <div id="gcorr-text" style="font-size:0.85rem; font-weight:bold; margin-bottom:5px;"></div>
+        <div class="flex">
+           <button onclick="applyGlobalCorrection()" style="background:#fff; color:var(--warning); padding:6px; margin:0; font-size:0.85rem;">適用する</button>
+           <button onclick="clearGlobalCorrection()" style="background:rgba(0,0,0,0.3); color:#fff; padding:6px; margin:0; font-size:0.85rem;">転用解除</button>
+        </div>
+      </div>
+
       <div class="flex" style="justify-content:space-between; margin-bottom: 10px; background: var(--input-bg); padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border-color);">
         <div class="flex" style="flex:1;">
            <span style="font-weight:bold; font-size:0.9rem; color: var(--input-text);">使用装薬:</span>
@@ -180,6 +186,11 @@
             <div><label>遠近 (奥+, 手前-)</label><input type="number" id="adj-ad" value="0"></div>
           </div>
           <button onclick="calcAdjustInFDC()" class="btn-red" style="margin:0; padding:8px; font-size:0.9rem;">修正を適用して再計算</button>
+          
+          <div id="adjust-accum-area" class="hidden" style="margin-top:10px; padding:10px; background:var(--card-bg); border-radius:5px; border: 1px solid var(--border-color);">
+             <div id="adjust-accum-text" style="font-weight:bold; font-size:0.85rem; margin-bottom:5px; color:var(--text-color);">累積修正: </div>
+             <button onclick="registerGlobalCorrection()" class="btn-gray" style="margin:0; padding:6px; font-size:0.8rem;">この累積修正量を「転用」として登録</button>
+          </div>
         </div>
       </div>
 
@@ -201,9 +212,17 @@
     <div id="surv-p2p" class="sub-view active">
       <div class="card">
         <h2>座標対座標 (Point to Point)</h2>
-        <p style="font-size:0.8rem; opacity:0.8;">2つの座標間の距離と方位角を算出します。</p>
-        <div class="flex"><div><label>点A E座標</label><input type="number" id="p2p-a-e"></div><div><label>点A N座標</label><input type="number" id="p2p-a-n"></div></div>
-        <div class="flex"><div><label>点B E座標</label><input type="number" id="p2p-b-e"></div><div><label>点B N座標</label><input type="number" id="p2p-b-n"></div></div>
+        <div style="background:var(--bg-color); padding:5px; border-radius:5px; margin-bottom:10px;">
+           <label style="margin:0;">点Aをリストから選択</label>
+           <select class="pt-select" onchange="applyPt(this, 'p2p-a-e', 'p2p-a-n')"></select>
+        </div>
+        <div class="flex"><div><label>点A E座標</label><input type="number" id="p2p-a-e" onchange="formatCoord(this)"></div><div><label>点A N座標</label><input type="number" id="p2p-a-n" onchange="formatCoord(this)"></div></div>
+        <hr style="border:0; border-top:1px dashed var(--border-color); margin:10px 0;">
+        <div style="background:var(--bg-color); padding:5px; border-radius:5px; margin-bottom:10px;">
+           <label style="margin:0;">点Bをリストから選択</label>
+           <select class="pt-select" onchange="applyPt(this, 'p2p-b-e', 'p2p-b-n')"></select>
+        </div>
+        <div class="flex"><div><label>点B E座標</label><input type="number" id="p2p-b-e" onchange="formatCoord(this)"></div><div><label>点B N座標</label><input type="number" id="p2p-b-n" onchange="formatCoord(this)"></div></div>
         <button onclick="calcP2P()">計算</button>
         <div id="res-p2p" class="sqd-result hidden"></div>
       </div>
@@ -212,8 +231,11 @@
     <div id="surv-dirdist" class="sub-view">
       <div class="card">
         <h2>方位角・距離から座標</h2>
-        <p style="font-size:0.8rem; opacity:0.8;">既知の座標から特定の方位と距離を進んだ地点を算出します。</p>
-        <div class="flex"><div><label>始点 E座標</label><input type="number" id="dd-e"></div><div><label>始点 N座標</label><input type="number" id="dd-n"></div></div>
+        <div style="background:var(--bg-color); padding:5px; border-radius:5px; margin-bottom:10px;">
+           <label style="margin:0;">始点をリストから選択</label>
+           <select class="pt-select" onchange="applyPt(this, 'dd-e', 'dd-n')"></select>
+        </div>
+        <div class="flex"><div><label>始点 E座標</label><input type="number" id="dd-e" onchange="formatCoord(this)"></div><div><label>始点 N座標</label><input type="number" id="dd-n" onchange="formatCoord(this)"></div></div>
         <div class="flex"><div><label>方位角(mil)</label><input type="number" id="dd-azm"></div><div><label>距離(m)</label><input type="number" id="dd-dist"></div></div>
         <button onclick="calcDirDist()">計算</button>
         <div id="res-dd" class="sqd-result hidden"></div>
@@ -222,10 +244,12 @@
 
     <div id="surv-intersect" class="sub-view">
       <div class="card"><h2>前方交会法</h2>
-        <div class="flex"><div><label>点A E</label><input type="number" id="f3_p1x"></div><div><label>点A N</label><input type="number" id="f3_p1y"></div></div>
+        <select class="pt-select" onchange="applyPt(this, 'f3_p1x', 'f3_p1y')" style="margin-bottom:5px;"></select>
+        <div class="flex"><div><label>点A E</label><input type="number" id="f3_p1x" onchange="formatCoord(this)"></div><div><label>点A N</label><input type="number" id="f3_p1y" onchange="formatCoord(this)"></div></div>
         <input type="number" id="f3_az1" placeholder="点Aからの目標方位角 (mil)">
         <hr style="border:0; border-top:1px dashed var(--border-color); margin:10px 0;">
-        <div class="flex"><div><label>点B E</label><input type="number" id="f3_p2x"></div><div><label>点B N</label><input type="number" id="f3_p2y"></div></div>
+        <select class="pt-select" onchange="applyPt(this, 'f3_p2x', 'f3_p2y')" style="margin-bottom:5px;"></select>
+        <div class="flex"><div><label>点B E</label><input type="number" id="f3_p2x" onchange="formatCoord(this)"></div><div><label>点B N</label><input type="number" id="f3_p2y" onchange="formatCoord(this)"></div></div>
         <input type="number" id="f3_az2" placeholder="点Bからの目標方位角 (mil)">
         <button onclick="calcF3()">交点を計算</button>
         <div id="res3" class="sqd-result hidden"></div>
@@ -234,10 +258,12 @@
 
     <div id="surv-resect" class="sub-view">
       <div class="card"><h2>後方交会法</h2>
-        <div class="flex"><div><label>既知点A E</label><input type="number" id="f4_p1x"></div><div><label>既知点A N</label><input type="number" id="f4_p1y"></div></div>
+        <select class="pt-select" onchange="applyPt(this, 'f4_p1x', 'f4_p1y')" style="margin-bottom:5px;"></select>
+        <div class="flex"><div><label>既知点A E</label><input type="number" id="f4_p1x" onchange="formatCoord(this)"></div><div><label>既知点A N</label><input type="number" id="f4_p1y" onchange="formatCoord(this)"></div></div>
         <input type="number" id="f4_az1" placeholder="Aへの測定方位角 (mil)">
         <hr style="border:0; border-top:1px dashed var(--border-color); margin:10px 0;">
-        <div class="flex"><div><label>既知点B E</label><input type="number" id="f4_p2x"></div><div><label>既知点B N</label><input type="number" id="f4_p2y"></div></div>
+        <select class="pt-select" onchange="applyPt(this, 'f4_p2x', 'f4_p2y')" style="margin-bottom:5px;"></select>
+        <div class="flex"><div><label>既知点B E</label><input type="number" id="f4_p2x" onchange="formatCoord(this)"></div><div><label>既知点B N</label><input type="number" id="f4_p2y" onchange="formatCoord(this)"></div></div>
         <input type="number" id="f4_az2" placeholder="Bへの測定方位角 (mil)">
         <button onclick="calcF4()">現在地を計算</button>
         <div id="res4" class="sqd-result hidden"></div>
@@ -247,7 +273,8 @@
     <div id="surv-traverse" class="sub-view">
       <div class="card">
         <div class="flex" style="justify-content:space-between;"><h2>トラバース計算</h2><button class="btn-gps" style="padding:6px; margin:0;" onclick="getGPSFor('f5_x', 'f5_y')">📍</button></div>
-        <div class="flex"><div><label>始点 E座標</label><input type="number" id="f5_x"></div><div><label>始点 N座標</label><input type="number" id="f5_y"></div></div>
+        <select class="pt-select" onchange="applyPt(this, 'f5_x', 'f5_y')" style="margin-bottom:5px;"></select>
+        <div class="flex"><div><label>始点 E座標</label><input type="number" id="f5_x" onchange="formatCoord(this)"></div><div><label>始点 N座標</label><input type="number" id="f5_y" onchange="formatCoord(this)"></div></div>
         <label>移動リスト</label>
         <div id="routeList"><div class="flex" style="margin-bottom:5px;"><input type="number" class="r_az" placeholder="方位(mil)"><input type="number" class="r_dist" placeholder="距離(m)"></div></div>
         <button class="btn-green" onclick="addRouteRow()" style="padding:8px; margin-bottom:15px;">＋ 移動を追加</button>
@@ -265,9 +292,10 @@
       </div>
       <input type="text" id="f6_name" placeholder="名称 (例: TRP-1)">
       <div class="flex">
-        <div><input type="number" id="f6_x" placeholder="E座標 (必須)"></div>
-        <div><input type="number" id="f6_y" placeholder="N座標 (必須)"></div>
+        <div><input type="number" id="f6_x" placeholder="E座標 (必須)" onchange="formatCoord(this)"></div>
+        <div><input type="number" id="f6_y" placeholder="N座標 (必須)" onchange="formatCoord(this)"></div>
       </div>
+      <div><input type="number" id="f6_z" placeholder="標高(任意/m)"></div>
       <div class="flex">
         <button id="btn_manual_save" class="btn-green" onclick="savePointManual()">リストに登録</button>
         <button id="btn_manual_cancel" class="btn-gray hidden" onclick="cancelEdit()">キャンセル</button>
@@ -297,20 +325,23 @@
         <h2 style="margin:0;">戦術状況図</h2>
         <button class="btn-gray" onclick="toggleMapSettings()" style="width:auto; padding:6px 10px; margin:0; font-size:0.8rem;">🗺️ 背景設定</button>
       </div>
-      <p style="font-size:0.75rem; opacity:0.8; margin-top:0;">陣地(青), FO(緑), 座標リスト(各色)を表示。</p>
 
       <div id="map_settings_area" class="hidden" style="border:1px solid var(--border-color); padding:10px; border-radius:5px; margin-bottom:10px;">
         <label>カスタム地図 (オフライン画像)</label>
         <input type="file" id="map_image_input" accept="image/*" style="font-size:0.8rem;">
-        <div class="flex"><div><input type="number" id="map_tl_e" placeholder="左上E"></div><div><input type="number" id="map_tl_n" placeholder="左上N"></div></div>
-        <div class="flex"><div><input type="number" id="map_br_e" placeholder="右下E"></div><div><input type="number" id="map_br_n" placeholder="右下N"></div></div>
+        <div class="flex"><div><input type="number" id="map_tl_e" placeholder="左上E" onchange="formatCoord(this)"></div><div><input type="number" id="map_tl_n" placeholder="左上N" onchange="formatCoord(this)"></div></div>
+        <div class="flex"><div><input type="number" id="map_br_e" placeholder="右下E" onchange="formatCoord(this)"></div><div><input type="number" id="map_br_n" placeholder="右下N" onchange="formatCoord(this)"></div></div>
         <div class="flex"><button class="btn-green" onclick="saveMapOverlay()">設定</button><button class="btn-red" onclick="clearMapOverlay()">クリア</button></div>
       </div>
 
       <div style="position:relative; width:100%; overflow:hidden;"><canvas id="mapCanvas" width="400" height="400"></canvas></div>
       <button class="btn-gray" onclick="resetMapView()" style="margin-top:10px;">視点をリセット</button>
       
-      </div>
+      <h3 style="margin-top: 20px;">2点間の距離・方位・垂直測定</h3>
+      <div class="flex"><select id="map_start"></select><span style="font-weight:bold;">→</span><select id="map_end"></select></div>
+      <button onclick="calcMap()">マップで測定</button>
+      <div id="resMap" class="sqd-result hidden"></div>
+    </div>
   </div>
 
   <div id="page-settings" class="page">
@@ -334,19 +365,19 @@
       <div id="settings-pri-area">
         <label style="color:var(--primary); font-weight:bold;">第1分隊</label>
         <div class="flex" style="margin-bottom:10px;">
-          <div><input type="number" id="s1-e" placeholder="E"></div><div><input type="number" id="s1-n" placeholder="N"></div>
+          <div><input type="number" id="s1-e" placeholder="E" onchange="formatCoord(this)"></div><div><input type="number" id="s1-n" placeholder="N" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s1-e', 's1-n')">📍取得</button>
         </div>
         
         <label style="color:var(--primary); font-weight:bold;">第2分隊 (基準砲)</label>
         <div class="flex" style="margin-bottom:10px;">
-          <div><input type="number" id="s2-e" placeholder="E"></div><div><input type="number" id="s2-n" placeholder="N"></div>
+          <div><input type="number" id="s2-e" placeholder="E" onchange="formatCoord(this)"></div><div><input type="number" id="s2-n" placeholder="N" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s2-e', 's2-n')">📍取得</button>
         </div>
         
         <label style="color:var(--primary); font-weight:bold;">第3分隊</label>
         <div class="flex" style="margin-bottom:10px;">
-          <div><input type="number" id="s3-e" placeholder="E"></div><div><input type="number" id="s3-n" placeholder="N"></div>
+          <div><input type="number" id="s3-e" placeholder="E" onchange="formatCoord(this)"></div><div><input type="number" id="s3-n" placeholder="N" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s3-e', 's3-n')">📍取得</button>
         </div>
       </div>
@@ -354,22 +385,22 @@
       <div id="settings-alt-area" class="hidden">
         <label style="color:var(--warning); font-weight:bold;">第1分隊 (予備)</label>
         <div class="flex" style="margin-bottom:10px;">
-          <div><input type="number" id="s1-alt-e" placeholder="E" style="border-color:var(--warning);"></div>
-          <div><input type="number" id="s1-alt-n" placeholder="N" style="border-color:var(--warning);"></div>
+          <div><input type="number" id="s1-alt-e" placeholder="E" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
+          <div><input type="number" id="s1-alt-n" placeholder="N" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s1-alt-e', 's1-alt-n')">📍取得</button>
         </div>
         
         <label style="color:var(--warning); font-weight:bold;">第2分隊 (基準砲 / 予備)</label>
         <div class="flex" style="margin-bottom:10px;">
-          <div><input type="number" id="s2-alt-e" placeholder="E" style="border-color:var(--warning);"></div>
-          <div><input type="number" id="s2-alt-n" placeholder="N" style="border-color:var(--warning);"></div>
+          <div><input type="number" id="s2-alt-e" placeholder="E" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
+          <div><input type="number" id="s2-alt-n" placeholder="N" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s2-alt-e', 's2-alt-n')">📍取得</button>
         </div>
         
         <label style="color:var(--warning); font-weight:bold;">第3分隊 (予備)</label>
         <div class="flex" style="margin-bottom:10px;">
-          <div><input type="number" id="s3-alt-e" placeholder="E" style="border-color:var(--warning);"></div>
-          <div><input type="number" id="s3-alt-n" placeholder="N" style="border-color:var(--warning);"></div>
+          <div><input type="number" id="s3-alt-e" placeholder="E" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
+          <div><input type="number" id="s3-alt-n" placeholder="N" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s3-alt-e', 's3-alt-n')">📍取得</button>
         </div>
       </div>
@@ -385,8 +416,8 @@
         <button class="btn-gps" style="background:#10b981; padding:10px;" onclick="getGPSFor('new-fo-e', 'new-fo-n')">📍</button>
       </div>
       <div class="flex">
-        <div><input type="number" id="new-fo-e" placeholder="E座標"></div>
-        <div><input type="number" id="new-fo-n" placeholder="N座標"></div>
+        <div><input type="number" id="new-fo-e" placeholder="E座標" onchange="formatCoord(this)"></div>
+        <div><input type="number" id="new-fo-n" placeholder="N座標" onchange="formatCoord(this)"></div>
       </div>
       <button onclick="addFO()" class="btn-green" style="margin-bottom:15px; background:#10b981;">＋ FOをリストに追加</button>
       
@@ -395,7 +426,6 @@
 
     <div class="card">
       <h2>装薬の性能設定 (Charge Range)</h2>
-      <p style="font-size:0.8rem; opacity:0.8;">各装薬の最小射程と最大射程(m)を設定します。</p>
       <div id="charge-settings-container"></div>
       <button onclick="saveChargeSettings()" class="btn-green">装薬データを保存</button>
     </div>
@@ -415,19 +445,10 @@
   <div class="modal-content">
     <span class="modal-close" onclick="closeReadme()">&times;</span>
     <h2>📖 アプリの使い方 (README)</h2>
-    <h3>🎯 FDC (射撃指揮)</h3>
     <ul>
-      <li>目標を入力すると最適な装薬が選ばれ、3個分隊の諸元を一斉計算します。</li>
-      <li>「🔭 極座標から算出」メニューを開くことで、設定タブで登録したFOリストからダイレクトに目標をセットできます。</li>
-      <li>計算後、結果画面の「🎯 修正射撃」メニューを開くことで、そのままの画面で即座にズレを修正・再計算できます。</li>
-    </ul>
-    <h3>🔭 測量 (Survey)</h3>
-    <ul>
-      <li>FDCの射撃とは関係なく、「純粋な測量計算ツール」として独立しました。座標対座標の距離計算や、方位と距離から到達点を計算する機能が利用可能です。</li>
-    </ul>
-    <h3>⚙️ 設定 (FOの専用管理)</h3>
-    <ul>
-      <li>設定タブの下部に「FO（観測所）登録リスト」が追加されました。目標座標のリストとは混ざらないため、誤爆を防ぎます。</li>
+      <li><b>座標の自動補完:</b> 座標欄に「3桁(例:123)」を入力すると自動で「12300」に、「4桁(例:1234)」なら「12340」へと上桁合わせの自動補完が行われます。</li>
+      <li><b>修正量の転用:</b> FDC結果画面から修正射撃を行い「転用登録」すると、別の目標を新規計算した際に、過去の修正量が適用可能になります。</li>
+      <li><b>マップ測定:</b> マップ画面にて、登録座標を選択することで距離・方位に加え、標高データ(Z)があれば高低差と垂直角も測定し、状況図に線を引きます。</li>
     </ul>
   </div>
 </div>
@@ -444,13 +465,15 @@
   if(!sys.s1) sys.s1 = {e: 9950, n: 10000, alt_e: "", alt_n: ""};
   if(!sys.s2) sys.s2 = {e: 10000, n: 10000, alt_e: "", alt_n: ""};
   if(!sys.s3) sys.s3 = {e: 10050, n: 10000, alt_e: "", alt_n: ""};
-  if(!sys.tgt) sys.tgt = {e: 10000, n: 13000};
   
+  if(!sys.tgt) sys.tgt = {e: 10000, n: 13000};
+  if(!sys.tgt_base) sys.tgt_base = {e: 10000, n: 13000};
+  if(!sys.global_correction) sys.global_correction = {e: 0, n: 0, active: false};
+
   if(sys.s1.alt_e === undefined) { sys.s1.alt_e=""; sys.s1.alt_n=""; }
   if(sys.s2.alt_e === undefined) { sys.s2.alt_e=""; sys.s2.alt_n=""; }
   if(sys.s3.alt_e === undefined) { sys.s3.alt_e=""; sys.s3.alt_n=""; }
 
-  // 【改修】FOの専用リスト管理
   let savedFOs = JSON.parse(localStorage.getItem('mgrsFOs')) || [];
 
   const defaultCharges = {
@@ -467,14 +490,14 @@
   if (mapOverlay) { mapImageObj.src = mapOverlay.dataUrl; }
 
   // ==========================================
-  // 初期化・UI制御
+  // 初期化・UI制御・ユーティリティ
   // ==========================================
   window.onload = () => {
     if (isNightMode) document.body.classList.add('tactical-night');
     loadInputs(); 
     renderChargeSettings(); 
     updateSavedList(); 
-    renderFOList(); // FOリストの描画
+    renderFOList(); 
     document.getElementById('f6_color').value = lastColor;
     updatePosToggleUI();
   };
@@ -484,6 +507,14 @@
     let n = Math.round(Number(num)); n = ((n % 100000) + 100000) % 100000; return String(n).padStart(5, '0'); 
   }
   function pad4(num) { return String(Math.round(num)).padStart(4, '0'); }
+
+  // 【改修】3桁・4桁の自動補完（上桁読み取り）
+  function formatCoord(el) {
+    if(!el.value) return;
+    let val = String(el.value).trim();
+    if(val.length === 3) el.value = val + "00";
+    else if(val.length === 4) el.value = val + "0";
+  }
 
   function switchTab(pageId, title, element) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -511,19 +542,15 @@
   function closeReadmeOnBg(e) { if(e.target === document.getElementById('readme-modal')) closeReadme(); }
 
   // ==========================================
-  // 陣地データ管理 (設定画面)
+  // 陣地・FOデータ管理
   // ==========================================
   function loadInputs() {
     document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
-    
     document.getElementById('sys-lat').value = sys.lat; 
-    
     document.getElementById('s1-e').value = pad5(sys.s1.e); document.getElementById('s1-n').value = pad5(sys.s1.n);
     document.getElementById('s1-alt-e').value = pad5(sys.s1.alt_e); document.getElementById('s1-alt-n').value = pad5(sys.s1.alt_n);
-    
     document.getElementById('s2-e').value = pad5(sys.s2.e); document.getElementById('s2-n').value = pad5(sys.s2.n); 
     document.getElementById('s2-alt-e').value = pad5(sys.s2.alt_e); document.getElementById('s2-alt-n').value = pad5(sys.s2.alt_n);
-    
     document.getElementById('s3-e').value = pad5(sys.s3.e); document.getElementById('s3-n').value = pad5(sys.s3.n);
     document.getElementById('s3-alt-e').value = pad5(sys.s3.alt_e); document.getElementById('s3-alt-n').value = pad5(sys.s3.alt_n);
   }
@@ -532,13 +559,11 @@
     if (isAlt) {
       document.getElementById('settings-pri-area').classList.add('hidden');
       document.getElementById('settings-alt-area').classList.remove('hidden');
-      document.getElementById('btn-set-alt').className = "btn-warn";
-      document.getElementById('btn-set-pri').className = "btn-gray";
+      document.getElementById('btn-set-alt').className = "btn-warn"; document.getElementById('btn-set-pri').className = "btn-gray";
     } else {
       document.getElementById('settings-pri-area').classList.remove('hidden');
       document.getElementById('settings-alt-area').classList.add('hidden');
-      document.getElementById('btn-set-pri').className = "btn-green";
-      document.getElementById('btn-set-alt').className = "btn-gray";
+      document.getElementById('btn-set-pri').className = "btn-green"; document.getElementById('btn-set-alt').className = "btn-gray";
     }
   }
 
@@ -548,66 +573,37 @@
     sys.s1.e = getV('s1-e'); sys.s1.n = getV('s1-n'); sys.s1.alt_e = getV('s1-alt-e'); sys.s1.alt_n = getV('s1-alt-n');
     sys.s2.e = getV('s2-e'); sys.s2.n = getV('s2-n'); sys.s2.alt_e = getV('s2-alt-e'); sys.s2.alt_n = getV('s2-alt-n');
     sys.s3.e = getV('s3-e'); sys.s3.n = getV('s3-n'); sys.s3.alt_e = getV('s3-alt-e'); sys.s3.alt_n = getV('s3-alt-n');
-    localStorage.setItem('pwa_sys', JSON.stringify(sys)); 
-    alert("陣地データを保存しました。");
+    localStorage.setItem('pwa_sys', JSON.stringify(sys)); alert("陣地データを保存しました。");
   }
 
   function togglePosMode() {
     sys.use_alt = !sys.use_alt;
     localStorage.setItem('pwa_sys', JSON.stringify(sys));
-    updatePosToggleUI();
-    autoSelectCharge();
+    updatePosToggleUI(); autoSelectCharge();
     if(document.getElementById('fdc-result-card').style.display === "block") { calculateMission(); }
   }
 
   function updatePosToggleUI() {
-    let btn = document.getElementById('btn-pos-toggle');
-    let badge = document.getElementById('res-pos-badge');
-    if (sys.use_alt) {
-        btn.className = "btn-warn"; btn.innerText = "⚠️ 予備陣地";
-        badge.style.background = "var(--warning)"; badge.style.color = "#fff"; badge.innerText = "予備(Alt)";
-    } else {
-        btn.className = "btn-green"; btn.innerText = "🟢 主陣地";
-        badge.style.background = "#10b981"; badge.style.color = "#fff"; badge.innerText = "主(Pri)";
-    }
+    let btn = document.getElementById('btn-pos-toggle'); let badge = document.getElementById('res-pos-badge');
+    if (sys.use_alt) { btn.className = "btn-warn"; btn.innerText = "⚠️ 予備陣地"; badge.style.background = "var(--warning)"; badge.style.color = "#fff"; badge.innerText = "予備(Alt)"; } 
+    else { btn.className = "btn-green"; btn.innerText = "🟢 主陣地"; badge.style.background = "#10b981"; badge.style.color = "#fff"; badge.innerText = "主(Pri)"; }
   }
 
-  // ==========================================
-  // 【改修】FOの独立管理ロジック
-  // ==========================================
   function renderFOList() {
     let html = "";
-    savedFOs.forEach(fo => {
-        html += `<div class="flex" style="justify-content:space-between; padding:10px; border-bottom:1px solid var(--border-color); font-size:0.85rem;">
-            <div><strong style="color:#10b981;">${fo.name}</strong><br><span style="color:#888;">E:${pad5(fo.e)} N:${pad5(fo.n)}</span></div>
-            <button class="btn-red" style="width:auto; padding:5px 10px; margin:0;" onclick="deleteFO(${fo.id})">削除</button>
-        </div>`;
-    });
+    savedFOs.forEach(fo => { html += `<div class="flex" style="justify-content:space-between; padding:10px; border-bottom:1px solid var(--border-color); font-size:0.85rem;"><div><strong style="color:#10b981;">${fo.name}</strong><br><span style="color:#888;">E:${pad5(fo.e)} N:${pad5(fo.n)}</span></div><button class="btn-red" style="width:auto; padding:5px 10px; margin:0;" onclick="deleteFO(${fo.id})">削除</button></div>`; });
     if(savedFOs.length === 0) { html = `<div style="padding:10px; color:#888; text-align:center; font-size:0.8rem;">登録されたFOはありません</div>`; }
-    document.getElementById('fo-list-container').innerHTML = html;
-    updateFODropdowns();
+    document.getElementById('fo-list-container').innerHTML = html; updateFODropdowns();
   }
 
   function addFO() {
-    let name = document.getElementById('new-fo-name').value;
-    let e = Number(document.getElementById('new-fo-e').value);
-    let n = Number(document.getElementById('new-fo-n').value);
-    if(!name || !e || !n) return alert("名称と座標をすべて入力してください");
-    
-    savedFOs.push({id: Date.now(), name: name, e: e, n: n});
-    localStorage.setItem('mgrsFOs', JSON.stringify(savedFOs));
-    renderFOList();
-    
-    document.getElementById('new-fo-name').value = "";
-    document.getElementById('new-fo-e').value = "";
-    document.getElementById('new-fo-n').value = "";
+    let name = document.getElementById('new-fo-name').value; let e = Number(document.getElementById('new-fo-e').value); let n = Number(document.getElementById('new-fo-n').value);
+    if(!name || !e || !n) return alert("名称と座標を入力してください");
+    savedFOs.push({id: Date.now(), name: name, e: e, n: n}); localStorage.setItem('mgrsFOs', JSON.stringify(savedFOs)); renderFOList();
+    document.getElementById('new-fo-name').value = ""; document.getElementById('new-fo-e').value = ""; document.getElementById('new-fo-n').value = "";
   }
 
-  function deleteFO(id) {
-    savedFOs = savedFOs.filter(fo => fo.id !== id);
-    localStorage.setItem('mgrsFOs', JSON.stringify(savedFOs));
-    renderFOList();
-  }
+  function deleteFO(id) { savedFOs = savedFOs.filter(fo => fo.id !== id); localStorage.setItem('mgrsFOs', JSON.stringify(savedFOs)); renderFOList(); }
 
   function updateFODropdowns() {
     let html = '<option value="">--- FOを選択 ---</option>';
@@ -617,51 +613,31 @@
 
   function loadFOForPolar() {
     let sel = document.getElementById('polar-fo-select').value;
-    if(sel) {
-        let fo = savedFOs.find(f => f.id == sel);
-        if(fo) {
-            document.getElementById('polar-fo-e').value = pad5(fo.e);
-            document.getElementById('polar-fo-n').value = pad5(fo.n);
-        }
-    }
+    if(sel) { let fo = savedFOs.find(f => f.id == sel); if(fo) { document.getElementById('polar-fo-e').value = pad5(fo.e); document.getElementById('polar-fo-n').value = pad5(fo.n); } }
   }
 
-
-  // ==========================================
-  // 汎用GPS取得機能
-  // ==========================================
   function latLonToUTM(lat, lon) {
     const a = 6378137.0; const f = 1 / 298.257223563; const k0 = 0.9996; const eccSquared = 2*f - f*f;
     const zoneNumber = Math.floor((lon + 180) / 6) + 1; const lonOrigin = (zoneNumber - 1) * 6 - 180 + 3;
     const latRad = lat * Math.PI / 180; const lonRad = lon * Math.PI / 180; const lonOriginRad = lonOrigin * Math.PI / 180;
-    const N = a / Math.sqrt(1 - eccSquared * Math.sin(latRad) * Math.sin(latRad));
-    const T = Math.tan(latRad) * Math.tan(latRad); const C = eccSquared * Math.cos(latRad) * Math.cos(latRad) / (1 - eccSquared);
-    const A = Math.cos(latRad) * (lonRad - lonOriginRad);
+    const N = a / Math.sqrt(1 - eccSquared * Math.sin(latRad) * Math.sin(latRad)); const T = Math.tan(latRad) * Math.tan(latRad); const C = eccSquared * Math.cos(latRad) * Math.cos(latRad) / (1 - eccSquared); const A = Math.cos(latRad) * (lonRad - lonOriginRad);
     const M = a * ((1 - eccSquared/4 - 3*eccSquared*eccSquared/64 - 5*Math.pow(eccSquared,3)/256) * latRad - (3*eccSquared/8 + 3*eccSquared*eccSquared/32 + 45*Math.pow(eccSquared,3)/1024) * Math.sin(2*latRad) + (15*eccSquared*eccSquared/256 + 45*Math.pow(eccSquared,3)/1024) * Math.sin(4*latRad) - (35*Math.pow(eccSquared,3)/3072) * Math.sin(6*latRad));
     const utmE = (k0 * N * (A + (1-T+C)*Math.pow(A,3)/6 + (5-18*T+T*T+72*C-58*eccSquared)*Math.pow(A,5)/120)) + 500000.0;
-    let utmN = k0 * (M + N*Math.tan(latRad)*(A*A/2 + (5-T+9*C+4*C*C)*Math.pow(A,4)/24 + (61-58*T+T*T+600*C-330*eccSquared)*Math.pow(A,6)/720));
-    if (lat < 0) utmN += 10000000.0;
-    return { e: utmE, n: utmN };
+    let utmN = k0 * (M + N*Math.tan(latRad)*(A*A/2 + (5-T+9*C+4*C*C)*Math.pow(A,4)/24 + (61-58*T+T*T+600*C-330*eccSquared)*Math.pow(A,6)/720)); if (lat < 0) utmN += 10000000.0; return { e: utmE, n: utmN };
   }
 
   function getGPSFor(eId, nId) {
-    if (!navigator.geolocation) { alert("GPS非対応の端末またはブラウザです"); return; }
+    if (!navigator.geolocation) { alert("GPS非対応"); return; }
     document.getElementById(eId).value = "取得中..."; document.getElementById(nId).value = "取得中...";
-    navigator.geolocation.getCurrentPosition(pos => {
-      let utm = latLonToUTM(pos.coords.latitude, pos.coords.longitude);
-      let e = Math.floor(utm.e % 100000); let n = Math.floor(utm.n % 100000);
-      document.getElementById(eId).value = pad5(e); document.getElementById(nId).value = pad5(n);
-    }, err => { alert("GPS失敗: " + err.message); document.getElementById(eId).value = ""; document.getElementById(nId).value = ""; }, { enableHighAccuracy: true });
+    navigator.geolocation.getCurrentPosition(pos => { let utm = latLonToUTM(pos.coords.latitude, pos.coords.longitude); let e = Math.floor(utm.e % 100000); let n = Math.floor(utm.n % 100000); document.getElementById(eId).value = pad5(e); document.getElementById(nId).value = pad5(n); formatCoord(document.getElementById(eId)); formatCoord(document.getElementById(nId)); }, err => { alert("GPS失敗: " + err.message); document.getElementById(eId).value = ""; document.getElementById(nId).value = ""; }, { enableHighAccuracy: true });
   }
 
   // ==========================================
-  // FDC ロジック
+  // FDC 計算ロジック
   // ==========================================
   function renderChargeSettings() {
     const container = document.getElementById('charge-settings-container'); container.innerHTML = '';
-    for (let i = 1; i <= 6; i++) {
-      container.innerHTML += `<div class="flex" style="margin-bottom:5px;"><span style="width:60px; font-weight:bold;">Chg ${i}</span><div><input type="number" id="chg-${i}-min" value="${charges[i].min}" placeholder="Min"></div><div><input type="number" id="chg-${i}-max" value="${charges[i].max}" placeholder="Max"></div></div>`;
-    }
+    for (let i = 1; i <= 6; i++) { container.innerHTML += `<div class="flex" style="margin-bottom:5px;"><span style="width:60px; font-weight:bold;">Chg ${i}</span><div><input type="number" id="chg-${i}-min" value="${charges[i].min}" placeholder="Min"></div><div><input type="number" id="chg-${i}-max" value="${charges[i].max}" placeholder="Max"></div></div>`; }
   }
 
   function saveChargeSettings() {
@@ -679,11 +655,8 @@
     let te = Number(document.getElementById('tgt-e').value); let tn = Number(document.getElementById('tgt-n').value);
     let baseE = sys.use_alt ? sys.s2.alt_e : sys.s2.e; let baseN = sys.use_alt ? sys.s2.alt_n : sys.s2.n;
     if (!te || !tn || baseE === "" || baseN === "") return;
-    
     let dist = Math.sqrt(Math.pow(te - Number(baseE), 2) + Math.pow(tn - Number(baseN), 2));
-    for (let i = 1; i <= 6; i++) {
-      if (dist >= charges[i].min && dist <= charges[i].max) { document.getElementById('charge-select').value = i; break; }
-    }
+    for (let i = 1; i <= 6; i++) { if (dist >= charges[i].min && dist <= charges[i].max) { document.getElementById('charge-select').value = i; break; } }
   }
 
   function loadTargetFromSelect() {
@@ -691,98 +664,77 @@
     if(sel) { let p = savedPoints.find(pt => pt.id == sel); if(p) { updateTargetAndSave(p.e, p.n); autoSelectCharge(); } }
   }
 
-  function toggleFdcPolar() {
-    document.getElementById('fdc-polar-area').classList.toggle('hidden');
-  }
-
-  function toggleFdcAdjust() {
-    document.getElementById('fdc-adjust-area').classList.toggle('hidden');
-  }
+  function toggleFdcPolar() { document.getElementById('fdc-polar-area').classList.toggle('hidden'); }
+  function toggleFdcAdjust() { document.getElementById('fdc-adjust-area').classList.toggle('hidden'); }
 
   function calcPolarInFDC() {
-    let fe = Number(document.getElementById('polar-fo-e').value); 
-    let fn = Number(document.getElementById('polar-fo-n').value);
-    let azm = Number(document.getElementById('polar-azm').value); 
-    let dist = Number(document.getElementById('polar-dist').value);
+    let fe = Number(document.getElementById('polar-fo-e').value); let fn = Number(document.getElementById('polar-fo-n').value); let azm = Number(document.getElementById('polar-azm').value); let dist = Number(document.getElementById('polar-dist').value);
     if(!fe || !fn || !azm || !dist) return alert("入力エラー");
-    
-    let rad = azm * (Math.PI / 3200.0);
-    updateTargetAndSave(fe + dist * Math.sin(rad), fn + dist * Math.cos(rad));
-    autoSelectCharge(); 
-    
-    toggleFdcPolar();
-    document.getElementById('polar-azm').value = "";
-    document.getElementById('polar-dist').value = "";
+    let rad = azm * (Math.PI / 3200.0); updateTargetAndSave(fe + dist * Math.sin(rad), fn + dist * Math.cos(rad));
+    autoSelectCharge(); toggleFdcPolar(); document.getElementById('polar-azm').value = ""; document.getElementById('polar-dist').value = "";
   }
 
-  // 【改修】FDC内で完結する修正射撃
   function calcAdjustInFDC() {
-    let otAzm=Number(document.getElementById('adj-azm').value); 
-    let rl=Number(document.getElementById('adj-rl').value); 
-    let ad=Number(document.getElementById('adj-ad').value);
+    let otAzm=Number(document.getElementById('adj-azm').value); let rl=Number(document.getElementById('adj-rl').value); let ad=Number(document.getElementById('adj-ad').value);
     if(!otAzm) return alert("OT方位角を入力してください");
-    
     let rad = otAzm * (Math.PI / 3200.0);
-    let e = sys.tgt.e + ad * Math.sin(rad) + rl * Math.sin(rad + Math.PI/2); 
-    let n = sys.tgt.n + ad * Math.cos(rad) + rl * Math.cos(rad + Math.PI/2);
-    
-    updateTargetAndSave(e, n);
-    document.getElementById('adj-rl').value = 0; document.getElementById('adj-ad').value = 0;
-    
-    autoSelectCharge(); 
-    calculateMission(); // 即座に再計算
-    
-    // 入力エリアを閉じてスッキリさせる
-    toggleFdcAdjust();
+    let e = sys.tgt.e + ad * Math.sin(rad) + rl * Math.sin(rad + Math.PI/2); let n = sys.tgt.n + ad * Math.cos(rad) + rl * Math.cos(rad + Math.PI/2);
+    updateTargetAndSave(e, n); document.getElementById('adj-rl').value = 0; document.getElementById('adj-ad').value = 0;
+    autoSelectCharge(); calculateMission(); toggleFdcAdjust();
   }
 
-  function endMission() {
-    if (confirm("現在の任務を終了し、新たな目標入力画面に戻りますか？")) {
-      document.getElementById('fdc-result-card').style.display = "none"; document.getElementById('fdc-input-area').style.display = "block";
-      document.getElementById('tgt-e').value = ""; document.getElementById('tgt-n').value = "";
-      document.getElementById('fdc_target_select').value = "";
-    }
+  // 【改修】累積修正の登録と適用
+  function registerGlobalCorrection() {
+    let dE = sys.tgt.e - sys.tgt_base.e; let dN = sys.tgt.n - sys.tgt_base.n;
+    sys.global_correction = { e: dE, n: dN, active: true };
+    localStorage.setItem('pwa_sys', JSON.stringify(sys));
+    alert(`累積修正量 (E:${dE>0?'+':''}${dE}, N:${dN>0?'+':''}${dN}) を「転用」としてシステムに登録しました。`);
   }
 
-  function changeChargeFromRes() {
-    document.getElementById('charge-select').value = document.getElementById('res-charge-select').value;
-    calculateMission();
+  function applyGlobalCorrection() {
+    sys.tgt.e = sys.tgt_base.e + sys.global_correction.e; sys.tgt.n = sys.tgt_base.n + sys.global_correction.n;
+    document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
+    calculateMission(); 
+  }
+
+  function clearGlobalCorrection() {
+    sys.global_correction.active = false; localStorage.setItem('pwa_sys', JSON.stringify(sys));
+    document.getElementById('global-correction-prompt').classList.add('hidden');
+  }
+
+  function updateAdjustAccumUI() {
+    let dE = sys.tgt.e - sys.tgt_base.e; let dN = sys.tgt.n - sys.tgt_base.n;
+    let area = document.getElementById('adjust-accum-area');
+    if(dE === 0 && dN === 0) { area.classList.add('hidden'); } 
+    else { area.classList.remove('hidden'); document.getElementById('adjust-accum-text').innerText = `現在のターゲットへの累積修正: E ${dE>0?'+':''}${dE}, N ${dN>0?'+':''}${dN}`; }
   }
 
   function calculateForPos(pos, tgt, chargeNum, latDeg) {
-    const dx = tgt.e - pos.e; const dy = tgt.n - pos.n;
-    const dist = Math.sqrt(dx*dx + dy*dy);
+    const dx = tgt.e - pos.e; const dy = tgt.n - pos.n; const dist = Math.sqrt(dx*dx + dy*dy);
     let rad = Math.atan2(dx, dy); let mils = rad * (3200.0 / Math.PI); if(mils < 0) mils += 6400;
     const chgData = charges[chargeNum];
     if (dist < chgData.min || dist > chgData.max) return { error: dist < chgData.min ? "近すぎ" : "射程外", dist: dist, azm: mils };
-
     const g = 9.80665; const v0 = Math.sqrt(chgData.max * g);
     const highAngleRad = (Math.PI / 2.0) - (Math.asin(Math.min(dist / chgData.max, 1)) / 2.0);
-    const elevMils = highAngleRad * (180.0 / Math.PI) * (6400.0 / 360.0);
-    const tof = (2.0 * v0 * Math.sin(highAngleRad)) / g;
-
+    const elevMils = highAngleRad * (180.0 / Math.PI) * (6400.0 / 360.0); const tof = (2.0 * v0 * Math.sin(highAngleRad)) / g;
     const latRad = (latDeg || 35.0) * (Math.PI / 180.0);
     const driftMilsRaw = Math.atan2(7.2921159e-5 * Math.sin(latRad) * dist * tof, dist) * (3200.0 / Math.PI);
-    let finalAzm = Math.round(mils) + Math.round(-driftMilsRaw);
-    if(finalAzm < 0) finalAzm += 6400; if(finalAzm >= 6400) finalAzm -= 6400;
-
+    let finalAzm = Math.round(mils) + Math.round(-driftMilsRaw); if(finalAzm < 0) finalAzm += 6400; if(finalAzm >= 6400) finalAzm -= 6400;
     return { dist: dist, azm: finalAzm, elev: elevMils, tof: tof, driftMils: Math.round(-driftMilsRaw) };
   }
 
   function calculateMission() {
-    let rawE = document.getElementById('tgt-e').value; let rawN = document.getElementById('tgt-n').value;
+    let rawE = Number(document.getElementById('tgt-e').value); let rawN = Number(document.getElementById('tgt-n').value);
     if(!rawE || !rawN) { alert("目標座標を入力してください"); return; }
-    sys.tgt.e = Number(rawE); sys.tgt.n = Number(rawN); localStorage.setItem('pwa_sys', JSON.stringify(sys));
     
-    const chg = document.getElementById('charge-select').value;
-    document.getElementById('res-charge-select').value = chg; 
+    // 新規目標かどうかの判定
+    if(sys.tgt.e !== rawE || sys.tgt.n !== rawN) { sys.tgt_base = { e: rawE, n: rawN }; sys.tgt = { e: rawE, n: rawN }; }
+    localStorage.setItem('pwa_sys', JSON.stringify(sys));
     
-    const getActivePos = (sqd) => {
-      let e = sys.use_alt ? sqd.alt_e : sqd.e; let n = sys.use_alt ? sqd.alt_n : sqd.n;
-      return (e === "" || n === "") ? null : { e: Number(e), n: Number(n) };
-    };
-    const p1 = getActivePos(sys.s1); const p2 = getActivePos(sys.s2); const p3 = getActivePos(sys.s3);
-    const lat = sys.lat || 35.0;
+    const chg = document.getElementById('charge-select').value; document.getElementById('res-charge-select').value = chg; 
+    
+    const getActivePos = (sqd) => { let e = sys.use_alt ? sqd.alt_e : sqd.e; let n = sys.use_alt ? sqd.alt_n : sqd.n; return (e === "" || n === "") ? null : { e: Number(e), n: Number(n) }; };
+    const p1 = getActivePos(sys.s1); const p2 = getActivePos(sys.s2); const p3 = getActivePos(sys.s3); const lat = sys.lat || 35.0;
 
     const container = document.getElementById('fdc-results-container'); container.innerHTML = "";
     let resultsData = [];
@@ -794,9 +746,11 @@
 
     resultsData.forEach(item => {
       let html = `<div class="sqd-result"><div class="sqd-title">${item.n} <span>${item.r.tof ? item.r.tof.toFixed(1)+'秒' : ''}</span></div><div class="res-grid">`;
-      html += `<div>距離: <span class="val">${Math.round(item.r.dist)}m</span></div><div>方位角: <span class="val">${pad4(item.r.azm)}₥</span></div>`;
-      if(item.r.error) html += `<div style="grid-column: span 2;">射角: <span style="color:gray">${item.r.error}</span></div>`;
-      else html += `<div style="grid-column: span 2;">射角: <span class="elev-val">${pad4(item.r.elev)}₥</span></div>`;
+      // 【改修】表示順を 方位角、射角 にし、距離をカッコで配置
+      html += `<div>方位角: <span class="val">${pad4(item.r.azm)}₥</span></div>`;
+      if(item.r.error) html += `<div>射角: <span style="color:gray">${item.r.error}</span></div>`;
+      else html += `<div>射角: <span class="elev-val">${pad4(item.r.elev)}₥</span></div>`;
+      html += `<div style="grid-column: span 2; font-size: 0.85rem; opacity: 0.8;">距離: (${Math.round(item.r.dist)}m)</div>`;
       container.innerHTML += html + `</div></div>`;
     });
     
@@ -804,50 +758,73 @@
     if(baseSqd && !baseSqd.r.error && baseSqd.r.driftMils !== 0) { document.getElementById('drift-info').innerText = `※コリオリ偏流修正: ${baseSqd.r.driftMils > 0 ? '右' : '左'} ${Math.abs(baseSqd.r.driftMils)} mil適用済`; } 
     else { document.getElementById('drift-info').innerText = ""; }
     
-    document.getElementById('fdc-input-area').style.display = "none";
-    document.getElementById('fdc-result-card').style.display = "block";
+    // 転用登録の確認ポップアップ制御
+    let promptArea = document.getElementById('global-correction-prompt');
+    if(sys.global_correction.active && (sys.tgt.e === sys.tgt_base.e && sys.tgt.n === sys.tgt_base.n)) {
+       promptArea.classList.remove('hidden');
+       document.getElementById('gcorr-text').innerText = `転用登録された修正量 (E:${sys.global_correction.e>0?'+':''}${sys.global_correction.e}, N:${sys.global_correction.n>0?'+':''}${sys.global_correction.n}) があります。`;
+    } else {
+       promptArea.classList.add('hidden');
+    }
+    
+    updateAdjustAccumUI();
+    document.getElementById('fdc-input-area').style.display = "none"; document.getElementById('fdc-result-card').style.display = "block";
     document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
   }
 
+  function changeChargeFromRes() { document.getElementById('charge-select').value = document.getElementById('res-charge-select').value; calculateMission(); }
+  
+  function endMission() {
+    if (confirm("現在の任務を終了し、新たな目標入力画面に戻りますか？")) {
+      document.getElementById('fdc-result-card').style.display = "none"; document.getElementById('fdc-input-area').style.display = "block";
+      document.getElementById('tgt-e').value = ""; document.getElementById('tgt-n').value = ""; document.getElementById('fdc_target_select').value = "";
+    }
+  }
+
   // ==========================================
-  // 測量ロジック
+  // 測量ロジック (リストからの自動入力対応)
   // ==========================================
+  function updateMapDropdowns() {
+    let html = '<option value="">--- リストから選択 ---</option>'; 
+    savedPoints.forEach(p => { html += `<option value="${p.id}">${p.name}</option>`; });
+    document.getElementById('fdc_target_select').innerHTML = html;
+    document.getElementById('map_start').innerHTML = html; 
+    document.getElementById('map_end').innerHTML = html; 
+    document.querySelectorAll('.pt-select').forEach(sel => sel.innerHTML = html);
+  }
+
+  function applyPt(sel, eId, nId) {
+    let p = savedPoints.find(pt => pt.id == sel.value);
+    if(p) { 
+        document.getElementById(eId).value = pad5(p.e); document.getElementById(nId).value = pad5(p.n); 
+        formatCoord(document.getElementById(eId)); formatCoord(document.getElementById(nId));
+    }
+  }
+
   function saveSurveyResult(x, y, namePrefix) {
     savedPoints.push({ id: Date.now(), name: namePrefix + "_" + pad5(x).substring(0,3), e: Math.round(x), n: Math.round(y), z: null, color: '#3b82f6' });
     localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList();
   }
 
-  // 【改修】測量タブ：座標対座標 (Point to Point)
   function calcP2P() {
     let ae = Number(document.getElementById('p2p-a-e').value); let an = Number(document.getElementById('p2p-a-n').value);
     let be = Number(document.getElementById('p2p-b-e').value); let bn = Number(document.getElementById('p2p-b-n').value);
     if(!ae||!an||!be||!bn) return;
-    let dx = be - ae; let dy = bn - an;
-    let dist = Math.sqrt(dx*dx + dy*dy);
-    let rad = Math.atan2(dx, dy); let mil = rad * (3200 / Math.PI); if(mil<0) mil+=6400;
-    let res = document.getElementById('res-p2p');
-    res.innerHTML = `方位角: ${pad4(mil)} mil<br>距離: ${Math.round(dist)} m`;
-    res.classList.remove('hidden');
+    let dx = be - ae; let dy = bn - an; let dist = Math.sqrt(dx*dx + dy*dy); let rad = Math.atan2(dx, dy); let mil = rad * (3200 / Math.PI); if(mil<0) mil+=6400;
+    let res = document.getElementById('res-p2p'); res.innerHTML = `方位角: <span class="val">${pad4(mil)} mil</span><br>距離: <span class="val">${Math.round(dist)} m</span>`; res.classList.remove('hidden');
   }
 
-  // 【改修】測量タブ：方位角と距離から座標 (Dir & Dist)
   function calcDirDist() {
-    let e = Number(document.getElementById('dd-e').value); let n = Number(document.getElementById('dd-n').value);
-    let azm = Number(document.getElementById('dd-azm').value); let dist = Number(document.getElementById('dd-dist').value);
-    if(!e||!n||!azm||!dist) return;
-    let rad = azm * (Math.PI / 3200.0);
-    let resE = e + dist * Math.sin(rad); let resN = n + dist * Math.cos(rad);
-    let res = document.getElementById('res-dd');
-    res.innerHTML = `到達点: E:${pad5(resE)} N:${pad5(resN)} <br><button onclick="saveSurveyResult(${resE},${resN},'DirDist')" class="btn-gps" style="margin-top:5px;">この座標を保存</button>`;
-    res.classList.remove('hidden');
+    let e = Number(document.getElementById('dd-e').value); let n = Number(document.getElementById('dd-n').value); let azm = Number(document.getElementById('dd-azm').value); let dist = Number(document.getElementById('dd-dist').value);
+    if(!e||!n||!azm||!dist) return; let rad = azm * (Math.PI / 3200.0); let resE = e + dist * Math.sin(rad); let resN = n + dist * Math.cos(rad);
+    let res = document.getElementById('res-dd'); res.innerHTML = `到達点: E:${pad5(resE)} N:${pad5(resN)} <br><button onclick="saveSurveyResult(${resE},${resN},'DirDist')" class="btn-gps" style="margin-top:5px;">この座標を保存</button>`; res.classList.remove('hidden');
   }
 
   function calcF3() {
     let p1x=Number(document.getElementById('f3_p1x').value); let p1y=Number(document.getElementById('f3_p1y').value); let az1=Number(document.getElementById('f3_az1').value);
     let p2x=Number(document.getElementById('f3_p2x').value); let p2y=Number(document.getElementById('f3_p2y').value); let az2=Number(document.getElementById('f3_az2').value);
     if(!p1x||!p2x) return;
-    let tan1 = Math.tan(Math.PI/2 - (az1 * Math.PI/3200)); let tan2 = Math.tan(Math.PI/2 - (az2 * Math.PI/3200));
-    let res = document.getElementById('res3');
+    let tan1 = Math.tan(Math.PI/2 - (az1 * Math.PI/3200)); let tan2 = Math.tan(Math.PI/2 - (az2 * Math.PI/3200)); let res = document.getElementById('res3');
     if (Math.abs(tan1 - tan2) < 0.0001) { res.innerHTML = '<span style="color:red">交点なし (平行等)</span>'; }
     else { let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; res.innerHTML = `交点: E:${pad5(intX)} N:${pad5(intY)} <br><button onclick="saveSurveyResult(${intX},${intY},'Intersect')" class="btn-gps" style="margin-top:5px;">保存</button>`; }
     res.classList.remove('hidden');
@@ -857,8 +834,7 @@
     let p1x=Number(document.getElementById('f4_p1x').value); let p1y=Number(document.getElementById('f4_p1y').value); let az1=Number(document.getElementById('f4_az1').value);
     let p2x=Number(document.getElementById('f4_p2x').value); let p2y=Number(document.getElementById('f4_p2y').value); let az2=Number(document.getElementById('f4_az2').value);
     if(!p1x||!p2x) return;
-    let tan1 = Math.tan(Math.PI/2 - (((az1 + 3200) % 6400) * Math.PI/3200)); let tan2 = Math.tan(Math.PI/2 - (((az2 + 3200) % 6400) * Math.PI/3200));
-    let res = document.getElementById('res4');
+    let tan1 = Math.tan(Math.PI/2 - (((az1 + 3200) % 6400) * Math.PI/3200)); let tan2 = Math.tan(Math.PI/2 - (((az2 + 3200) % 6400) * Math.PI/3200)); let res = document.getElementById('res4');
     if (Math.abs(tan1 - tan2) < 0.0001) res.innerHTML = '<span style="color:red">交点なし (平行等)</span>';
     else { let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; res.innerHTML = `現在地: E:${pad5(intX)} N:${pad5(intY)} <br><button onclick="saveSurveyResult(${intX},${intY},'Resect')" class="btn-gps" style="margin-top:5px;">保存</button>`; }
     res.classList.remove('hidden');
@@ -876,18 +852,18 @@
   // 座標管理ロジック (Points)
   // ==========================================
   function savePointManual() {
-    let name = document.getElementById('f6_name').value; let x = Number(document.getElementById('f6_x').value); let y = Number(document.getElementById('f6_y').value); let color = document.getElementById('f6_color').value;
+    let name = document.getElementById('f6_name').value; let x = Number(document.getElementById('f6_x').value); let y = Number(document.getElementById('f6_y').value); let z = Number(document.getElementById('f6_z').value) || null; let color = document.getElementById('f6_color').value;
     if (!name || !x || !y) { alert("入力エラー"); return; }
-    if (editingId !== null) { let p = savedPoints.find(p => p.id === editingId); if (p) { p.name = name; p.e = x; p.n = y; p.color = color; } } 
-    else { savedPoints.push({ id: Date.now(), name: name, e: x, n: y, z: null, color: color }); lastColor = color; localStorage.setItem('mgrsLastColor', color); }
+    if (editingId !== null) { let p = savedPoints.find(p => p.id === editingId); if (p) { p.name = name; p.e = x; p.n = y; p.z = z; p.color = color; } } 
+    else { savedPoints.push({ id: Date.now(), name: name, e: x, n: y, z: z, color: color }); lastColor = color; localStorage.setItem('mgrsLastColor', color); }
     cancelEdit(); localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); 
   }
   function editPoint(id) {
     let p = savedPoints.find(p => p.id === id); if (!p) return; editingId = id;
-    document.getElementById('f6_name').value = p.name; document.getElementById('f6_x').value = pad5(p.e); document.getElementById('f6_y').value = pad5(p.n); document.getElementById('f6_color').value = p.color || lastColor;
+    document.getElementById('f6_name').value = p.name; document.getElementById('f6_x').value = pad5(p.e); document.getElementById('f6_y').value = pad5(p.n); document.getElementById('f6_z').value = p.z || ""; document.getElementById('f6_color').value = p.color || lastColor;
     document.getElementById('btn_manual_save').innerText = "更新"; document.getElementById('btn_manual_cancel').classList.remove('hidden');
   }
-  function cancelEdit() { editingId = null; document.getElementById('f6_name').value = ""; document.getElementById('f6_x').value = ""; document.getElementById('f6_y').value = ""; document.getElementById('btn_manual_save').innerText = "登録"; document.getElementById('btn_manual_cancel').classList.add('hidden'); }
+  function cancelEdit() { editingId = null; document.getElementById('f6_name').value = ""; document.getElementById('f6_x').value = ""; document.getElementById('f6_y').value = ""; document.getElementById('f6_z').value = ""; document.getElementById('btn_manual_save').innerText = "登録"; document.getElementById('btn_manual_cancel').classList.add('hidden'); }
   function deletePoint(id) { savedPoints = savedPoints.filter(p => p.id !== id); localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); }
   function deleteAllPoints() { if(confirm("全削除しますか？")) { savedPoints = []; localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); } }
   function applySort() {
@@ -898,8 +874,8 @@
   function updateSavedList() {
     let html = "";
     savedPoints.forEach((p) => {
-      let pColor = p.color || '#ff3b30';
-      html += `<div class="list-item" data-id="${p.id}"><div class="drag-handle">≡</div><div style="flex:1; margin-left:5px;"><strong><span style="display:inline-block; width:12px; height:12px; background:${pColor}; border-radius:50%; margin-right:5px;"></span>${p.name}</strong><br><span style="font-size:0.85rem; color:#888;">E:${pad5(p.e)} N:${pad5(p.n)}</span></div><div style="display:flex; gap:5px;"><button class="btn-gray" style="padding:6px; margin:0;" onclick="editPoint(${p.id})">編</button><button class="btn-red" style="padding:6px; margin:0;" onclick="deletePoint(${p.id})">削</button></div></div>`;
+      let pColor = p.color || '#ff3b30'; let zTxt = p.z ? ` Z:${p.z}m` : '';
+      html += `<div class="list-item" data-id="${p.id}"><div class="drag-handle">≡</div><div style="flex:1; margin-left:5px;"><strong><span style="display:inline-block; width:12px; height:12px; background:${pColor}; border-radius:50%; margin-right:5px;"></span>${p.name}</strong><br><span style="font-size:0.85rem; color:#888;">E:${pad5(p.e)} N:${pad5(p.n)}${zTxt}</span></div><div style="display:flex; gap:5px;"><button class="btn-gray" style="padding:6px; margin:0;" onclick="editPoint(${p.id})">編</button><button class="btn-red" style="padding:6px; margin:0;" onclick="deletePoint(${p.id})">削</button></div></div>`;
     });
     document.getElementById('savedList').innerHTML = html; updateMapDropdowns();
   }
@@ -918,17 +894,12 @@
   function exportPoints() { document.getElementById('io_text').value = savedPoints.map(p => `${p.name} ${pad5(p.e)} ${pad5(p.n)} - ${p.color || '#ff3b30'}`).join('\n'); }
 
   // ==========================================
-  // マップエンジン
+  // マップ・図上測定機能 (高低差・垂直角対応)
   // ==========================================
   let mapState = { x: 0, y: 0, scale: 1, baseScale: 1, refE: 0, refN: 0, minDx: 0, maxDx: 0, minDy: 0, maxDy: 0, padding: 30 };
   let currentP1 = null; let currentP2 = null;
 
   function toggleMapSettings() { document.getElementById('map_settings_area').classList.toggle('hidden'); }
-  function updateMapDropdowns() {
-    let html = '<option value="">--- 選択 ---</option>'; 
-    savedPoints.forEach(p => { html += `<option value="${p.id}">${p.name}</option>`; });
-    document.getElementById('fdc_target_select').innerHTML = html;
-  }
   
   function saveMapOverlay() {
     let fileInput = document.getElementById('map_image_input'); let tl_e = Number(document.getElementById('map_tl_e').value); let tl_n = Number(document.getElementById('map_tl_n').value); let br_e = Number(document.getElementById('map_br_e').value); let br_n = Number(document.getElementById('map_br_n').value);
@@ -939,6 +910,24 @@
   }
   function clearMapOverlay() { mapOverlay = null; localStorage.removeItem('mgrsMapOverlay'); drawMap(null, null, true); }
 
+  // 【改修】マップ測定：2点間の線と高低差・垂直角の計算
+  function calcMap() {
+    let sId = document.getElementById('map_start').value; let eId = document.getElementById('map_end').value; if (!sId || !eId) return;
+    currentP1 = savedPoints.find(p => p.id == sId); currentP2 = savedPoints.find(p => p.id == eId);
+    let dx = currentP2.e - currentP1.e; let dy = currentP2.n - currentP1.n;
+    let dist = Math.sqrt(dx*dx + dy*dy); let rad = Math.atan2(dx, dy); let mil = rad * (3200 / Math.PI); if(mil<0) mil+=6400;
+    
+    let zText = "";
+    if(currentP1.z !== null && currentP2.z !== null && currentP1.z !== undefined && currentP2.z !== undefined) {
+       let dz = currentP2.z - currentP1.z;
+       let vertRad = Math.atan2(dz, dist);
+       let vertMil = vertRad * (3200 / Math.PI);
+       zText = `<br>高低差: ${Math.round(dz)} m<br>垂直角: ${Math.round(vertMil)} mil`;
+    }
+
+    document.getElementById('resMap').innerHTML = `【${currentP1.name} → ${currentP2.name}】<br>方位角: <span class="val">${pad4(mil)}</span> mil<br>水平距離: <span class="val">${Math.round(dist)}</span> m${zText}`; 
+    document.getElementById('resMap').classList.remove('hidden'); drawMap(currentP1, currentP2, false);
+  }
   function resetMapView() { drawMap(currentP1, currentP2, true); }
 
   function drawMap(highlightP1 = null, highlightP2 = null, resetView = false) {
@@ -955,9 +944,7 @@
     if(e2 && n2) pointsToBound.push({e: Number(e2), n: Number(n2), name:"S2", color:"#3b82f6"}); 
     if(e3 && n3) pointsToBound.push({e: Number(e3), n: Number(n3), name:"S3", color:"#3b82f6"}); 
     
-    // 【改修】登録済みFOをすべてプロット
     savedFOs.forEach(fo => { pointsToBound.push({e: fo.e, n: fo.n, name: fo.name, color:"#10b981"}); });
-    
     pointsToBound.push({e:sys.tgt.e, n:sys.tgt.n, name:"TGT", color:"#ef4444"});
     
     if (mapOverlay) { pointsToBound.push({e: mapOverlay.tl_e, n: mapOverlay.tl_n}); pointsToBound.push({e: mapOverlay.br_e, n: mapOverlay.br_n}); }
@@ -987,7 +974,9 @@
     ctx.font = "bold 11px sans-serif"; ctx.textAlign="center"; for(let e=sE; e<=eE; e+=1000) { let x=getX(e); if(x>0&&x<w){ let t=pad5(e).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,x,h-5); ctx.fillStyle=cText; ctx.fillText(t,x,h-5); } }
     ctx.textAlign="left"; for(let n=sN; n<=eN; n+=1000) { let y=getY(n); if(y>0&&y<h){ let t=pad5(n).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,5,y+4); ctx.fillStyle=cText; ctx.fillText(t,5,y+4); } }
 
+    // 【改修】指定の2点間に線を引く（復活）
     if (highlightP1 && highlightP2) { ctx.strokeStyle = isNightMode ? '#ff3b30' : 'rgba(0,122,255,0.7)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(getX(highlightP1.e), getY(highlightP1.n)); ctx.lineTo(getX(highlightP2.e), getY(highlightP2.n)); ctx.stroke(); }
+    
     pointsToBound.forEach(p => { let x = getX(p.e), y = getY(p.n); let pinColor = isNightMode ? '#ff3b30' : (p.color || '#ff3b30'); if(x > -20 && x < w + 20 && y > -20 && y < h + 20) { ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fillStyle = pinColor; ctx.fill(); ctx.strokeStyle = cBg; ctx.lineWidth = 1.5; ctx.stroke(); ctx.font = "bold 11px sans-serif"; ctx.lineWidth = 3; ctx.strokeStyle = cTextHalo; ctx.strokeText(p.name, x+8, y+4); ctx.fillStyle = isNightMode?'#ff3b30':'#333'; ctx.fillText(p.name, x+8, y+4); } });
   }
 
