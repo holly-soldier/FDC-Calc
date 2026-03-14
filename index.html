@@ -112,6 +112,13 @@
           <span style="font-size:0.9rem; font-weight:bold; color:var(--primary);">🔭 極座標から目標を算出 ▼</span>
         </div>
         <div id="fdc-polar-area" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color);">
+          
+          <label>FO (観測所) を選択</label>
+          <div class="flex" style="margin-bottom:10px;">
+            <select id="polar-fo-select" onchange="loadFOForPolar()"></select>
+            <button class="btn-gray" onclick="updateFODropdowns()" style="width:auto; padding:10px; margin-bottom:12px;">🔄</button>
+          </div>
+
           <div class="flex">
             <div><label>FO E座標</label><input type="number" id="polar-fo-e"></div>
             <div><label>FO N座標</label><input type="number" id="polar-fo-n"></div>
@@ -125,7 +132,7 @@
       </div>
 
       <div style="margin-bottom:10px;">
-        <label>登録リストから目標を選択</label>
+        <label>目標リスト(Points)から選択</label>
         <div class="flex">
           <select id="fdc_target_select" onchange="loadTargetFromSelect()"></select>
           <button class="btn-gray" onclick="updateMapDropdowns()" style="width:auto; padding:10px; margin-bottom:12px;">🔄</button>
@@ -145,10 +152,7 @@
     </div>
     
     <div class="card" id="fdc-result-card" style="display: none;">
-      <div class="flex" style="justify-content:space-between; margin-bottom: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">
-        <h2 style="margin:0; border:none; padding:0;">射撃諸元 (3個分隊)</h2>
-        <button class="btn-red" style="width:auto; padding:6px 12px; margin:0; font-size:0.85rem;" onclick="gotoAdjustFire()">🎯 修正射撃</button>
-      </div>
+      <h2 style="margin-bottom: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">射撃諸元 (3個分隊)</h2>
       
       <div class="flex" style="justify-content:space-between; margin-bottom: 10px; background: var(--input-bg); padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border-color);">
         <div class="flex" style="flex:1;">
@@ -165,39 +169,63 @@
       
       <div id="fdc-results-container"></div>
 
-      <button class="btn-dark" style="margin-top: 15px;" onclick="endMission()">🏁 任務終了 (End Mission)</button>
+      <div style="background:var(--bg-color); padding:10px; border-radius:5px; border:1px solid var(--border-color); margin-top:15px; margin-bottom:15px;">
+        <div class="flex" style="justify-content:space-between; cursor:pointer;" onclick="toggleFdcAdjust()">
+          <span style="font-size:0.9rem; font-weight:bold; color:#ef4444;">🎯 着弾の修正射撃を適用 ▼</span>
+        </div>
+        <div id="fdc-adjust-area" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color);">
+          <label>OT方位角 (mil)</label><input type="number" id="adj-azm" placeholder="例: 0800">
+          <div class="flex">
+            <div><label>左右 (右+, 左-)</label><input type="number" id="adj-rl" value="0"></div>
+            <div><label>遠近 (奥+, 手前-)</label><input type="number" id="adj-ad" value="0"></div>
+          </div>
+          <button onclick="calcAdjustInFDC()" class="btn-red" style="margin:0; padding:8px; font-size:0.9rem;">修正を適用して再計算</button>
+        </div>
+      </div>
+
+      <button class="btn-dark" onclick="endMission()">🏁 任務終了 (End Mission)</button>
     </div>
   </div>
 
   <div id="page-survey" class="page">
     <div class="card" style="padding-bottom:5px;">
       <select id="survey-menu" onchange="switchSurveyView()">
-        <option value="surv-adjust">1. 修正射撃 (Adjust Fire)</option>
-        <option value="surv-intersect">2. 前方交会法 (Intersection)</option>
-        <option value="surv-resect">3. 後方交会法 (Resection)</option>
-        <option value="surv-traverse">4. トラバース計算 (Traverse)</option>
+        <option value="surv-p2p">1. 座標対座標 (Point to Point)</option>
+        <option value="surv-dirdist">2. 方位・距離から座標 (Dir & Dist)</option>
+        <option value="surv-intersect">3. 前方交会法 (Intersection)</option>
+        <option value="surv-resect">4. 後方交会法 (Resection)</option>
+        <option value="surv-traverse">5. トラバース計算 (Traverse)</option>
       </select>
     </div>
 
-    <div id="surv-adjust" class="sub-view active">
+    <div id="surv-p2p" class="sub-view active">
       <div class="card">
-        <h2>修正射撃 (Shift from Known Point)</h2>
-        <p style="font-size:0.8rem; opacity:0.8;">現在のFDC目標座標を基準に、観測者から見た修正を加えます。</p>
-        <label>OT方位角 (mil)</label><input type="number" id="adj-azm" placeholder="例: 0800">
-        <div class="flex">
-          <div><label>左右 (右+, 左-)</label><input type="number" id="adj-rl" value="0"></div>
-          <div><label>遠近 (奥+, 手前-)</label><input type="number" id="adj-ad" value="0"></div>
-        </div>
-        <button onclick="calcAdjust()" class="btn-red">修正適用して FDC へ送る</button>
+        <h2>座標対座標 (Point to Point)</h2>
+        <p style="font-size:0.8rem; opacity:0.8;">2つの座標間の距離と方位角を算出します。</p>
+        <div class="flex"><div><label>点A E座標</label><input type="number" id="p2p-a-e"></div><div><label>点A N座標</label><input type="number" id="p2p-a-n"></div></div>
+        <div class="flex"><div><label>点B E座標</label><input type="number" id="p2p-b-e"></div><div><label>点B N座標</label><input type="number" id="p2p-b-n"></div></div>
+        <button onclick="calcP2P()">計算</button>
+        <div id="res-p2p" class="sqd-result hidden"></div>
+      </div>
+    </div>
+
+    <div id="surv-dirdist" class="sub-view">
+      <div class="card">
+        <h2>方位角・距離から座標</h2>
+        <p style="font-size:0.8rem; opacity:0.8;">既知の座標から特定の方位と距離を進んだ地点を算出します。</p>
+        <div class="flex"><div><label>始点 E座標</label><input type="number" id="dd-e"></div><div><label>始点 N座標</label><input type="number" id="dd-n"></div></div>
+        <div class="flex"><div><label>方位角(mil)</label><input type="number" id="dd-azm"></div><div><label>距離(m)</label><input type="number" id="dd-dist"></div></div>
+        <button onclick="calcDirDist()">計算</button>
+        <div id="res-dd" class="sqd-result hidden"></div>
       </div>
     </div>
 
     <div id="surv-intersect" class="sub-view">
       <div class="card"><h2>前方交会法</h2>
-        <div class="flex"><div><label>点A E座標</label><input type="number" id="f3_p1x"></div><div><label>点A N座標</label><input type="number" id="f3_p1y"></div></div>
+        <div class="flex"><div><label>点A E</label><input type="number" id="f3_p1x"></div><div><label>点A N</label><input type="number" id="f3_p1y"></div></div>
         <input type="number" id="f3_az1" placeholder="点Aからの目標方位角 (mil)">
         <hr style="border:0; border-top:1px dashed var(--border-color); margin:10px 0;">
-        <div class="flex"><div><label>点B E座標</label><input type="number" id="f3_p2x"></div><div><label>点B N座標</label><input type="number" id="f3_p2y"></div></div>
+        <div class="flex"><div><label>点B E</label><input type="number" id="f3_p2x"></div><div><label>点B N</label><input type="number" id="f3_p2y"></div></div>
         <input type="number" id="f3_az2" placeholder="点Bからの目標方位角 (mil)">
         <button onclick="calcF3()">交点を計算</button>
         <div id="res3" class="sqd-result hidden"></div>
@@ -206,10 +234,10 @@
 
     <div id="surv-resect" class="sub-view">
       <div class="card"><h2>後方交会法</h2>
-        <div class="flex"><div><label>既知点A E座標</label><input type="number" id="f4_p1x"></div><div><label>既知点A N座標</label><input type="number" id="f4_p1y"></div></div>
+        <div class="flex"><div><label>既知点A E</label><input type="number" id="f4_p1x"></div><div><label>既知点A N</label><input type="number" id="f4_p1y"></div></div>
         <input type="number" id="f4_az1" placeholder="Aへの測定方位角 (mil)">
         <hr style="border:0; border-top:1px dashed var(--border-color); margin:10px 0;">
-        <div class="flex"><div><label>既知点B E座標</label><input type="number" id="f4_p2x"></div><div><label>既知点B N座標</label><input type="number" id="f4_p2y"></div></div>
+        <div class="flex"><div><label>既知点B E</label><input type="number" id="f4_p2x"></div><div><label>既知点B N</label><input type="number" id="f4_p2y"></div></div>
         <input type="number" id="f4_az2" placeholder="Bへの測定方位角 (mil)">
         <button onclick="calcF4()">現在地を計算</button>
         <div id="res4" class="sqd-result hidden"></div>
@@ -281,18 +309,14 @@
 
       <div style="position:relative; width:100%; overflow:hidden;"><canvas id="mapCanvas" width="400" height="400"></canvas></div>
       <button class="btn-gray" onclick="resetMapView()" style="margin-top:10px;">視点をリセット</button>
-
-      <h3 style="margin-top: 20px;">2点間の距離・方位角測定</h3>
-      <div class="flex"><select id="map_start"></select><span style="font-weight:bold;">→</span><select id="map_end"></select></div>
-      <button onclick="calcMap()">測定</button>
-      <div id="resMap" class="sqd-result hidden"></div>
-    </div>
+      
+      </div>
   </div>
 
   <div id="page-settings" class="page">
     <div class="card">
       <div class="flex" style="justify-content:space-between; margin-bottom:10px;">
-        <h2 style="margin:0; border:none;">陣地・観測所データ</h2>
+        <h2 style="margin:0; border:none;">陣地データ設定</h2>
       </div>
       
       <div>
@@ -349,17 +373,24 @@
           <button class="btn-gps" onclick="getGPSFor('s3-alt-e', 's3-alt-n')">📍取得</button>
         </div>
       </div>
+      <button onclick="saveBasePos()" class="btn-green" style="margin-top: 15px;">陣地データを保存</button>
+    </div>
 
-      <hr style="border:0; border-top:1px dashed var(--border-color); margin:15px 0;">
+    <div class="card">
+      <h2 style="color:#10b981;">FO (観測所) 登録リスト</h2>
+      <p style="font-size:0.75rem; opacity:0.8;">※目標座標(Points)とは完全に分離した専用データとして管理されます。</p>
       
-      <label style="color:#10b981; font-weight:bold;">FO (観測所)</label>
-      <div class="flex">
-        <div><input type="number" id="sys-fo-e" placeholder="FO E座標"></div>
-        <div><input type="number" id="sys-fo-n" placeholder="FO N座標"></div>
-        <button class="btn-gps" style="background:#10b981;" onclick="getGPSFor('sys-fo-e', 'sys-fo-n')">📍取得</button>
+      <div class="flex" style="margin-bottom:10px;">
+        <input type="text" id="new-fo-name" placeholder="名称 (例: FO-1)">
+        <button class="btn-gps" style="background:#10b981; padding:10px;" onclick="getGPSFor('new-fo-e', 'new-fo-n')">📍</button>
       </div>
-
-      <button onclick="saveBasePos()" class="btn-green" style="margin-top: 15px;">陣地・観測所データを保存</button>
+      <div class="flex">
+        <div><input type="number" id="new-fo-e" placeholder="E座標"></div>
+        <div><input type="number" id="new-fo-n" placeholder="N座標"></div>
+      </div>
+      <button onclick="addFO()" class="btn-green" style="margin-bottom:15px; background:#10b981;">＋ FOをリストに追加</button>
+      
+      <div id="fo-list-container" style="background:var(--bg-color); border-radius:5px;"></div>
     </div>
 
     <div class="card">
@@ -386,14 +417,17 @@
     <h2>📖 アプリの使い方 (README)</h2>
     <h3>🎯 FDC (射撃指揮)</h3>
     <ul>
-      <li>目標を入力すると最適な装薬が選ばれ、3個分隊の諸元を一斉計算します（空欄の分隊は自動スキップ）。</li>
-      <li>「🟢 主陣地」ボタンをタップすると「⚠️ 予備陣地」に切り替わり、計算ベースが瞬時に移行します。</li>
-      <li>「🔭 極座標から算出」メニューを開くことで、観測方位と距離からダイレクトに目標をセットできます。</li>
-      <li>結果画面のドロップダウンから直接装薬を変更し、即座に再計算することが可能です。</li>
+      <li>目標を入力すると最適な装薬が選ばれ、3個分隊の諸元を一斉計算します。</li>
+      <li>「🔭 極座標から算出」メニューを開くことで、設定タブで登録したFOリストからダイレクトに目標をセットできます。</li>
+      <li>計算後、結果画面の「🎯 修正射撃」メニューを開くことで、そのままの画面で即座にズレを修正・再計算できます。</li>
     </ul>
-    <h3>⚙️ 設定タブ (陣地とFOの登録)</h3>
+    <h3>🔭 測量 (Survey)</h3>
     <ul>
-      <li>設定タブ内の各分隊・FOの横にある「📍取得」ボタンを押すことで、現在地を直接システムに登録できます。これは汎用リスト(Points)とは完全に独立したシステムデータとして扱われます。</li>
+      <li>FDCの射撃とは関係なく、「純粋な測量計算ツール」として独立しました。座標対座標の距離計算や、方位と距離から到達点を計算する機能が利用可能です。</li>
+    </ul>
+    <h3>⚙️ 設定 (FOの専用管理)</h3>
+    <ul>
+      <li>設定タブの下部に「FO（観測所）登録リスト」が追加されました。目標座標のリストとは混ざらないため、誤爆を防ぎます。</li>
     </ul>
   </div>
 </div>
@@ -406,17 +440,18 @@
   
   let sys = JSON.parse(localStorage.getItem('pwa_sys')) || {};
   if(sys.use_alt === undefined) sys.use_alt = false;
-  if(sys.lat === undefined) sys.lat = (sys.s2 && sys.s2.lat) ? sys.s2.lat : 35.0; // 緯度を独立化
+  if(sys.lat === undefined) sys.lat = (sys.s2 && sys.s2.lat) ? sys.s2.lat : 35.0; 
   if(!sys.s1) sys.s1 = {e: 9950, n: 10000, alt_e: "", alt_n: ""};
   if(!sys.s2) sys.s2 = {e: 10000, n: 10000, alt_e: "", alt_n: ""};
   if(!sys.s3) sys.s3 = {e: 10050, n: 10000, alt_e: "", alt_n: ""};
-  if(!sys.fo) sys.fo = {e: 11000, n: 12500};
   if(!sys.tgt) sys.tgt = {e: 10000, n: 13000};
   
-  // 過去データの互換性担保
   if(sys.s1.alt_e === undefined) { sys.s1.alt_e=""; sys.s1.alt_n=""; }
   if(sys.s2.alt_e === undefined) { sys.s2.alt_e=""; sys.s2.alt_n=""; }
   if(sys.s3.alt_e === undefined) { sys.s3.alt_e=""; sys.s3.alt_n=""; }
+
+  // 【改修】FOの専用リスト管理
+  let savedFOs = JSON.parse(localStorage.getItem('mgrsFOs')) || [];
 
   const defaultCharges = {
     1:{min:180,max:800}, 2:{min:400,max:1500}, 3:{min:800,max:2400},
@@ -439,6 +474,7 @@
     loadInputs(); 
     renderChargeSettings(); 
     updateSavedList(); 
+    renderFOList(); // FOリストの描画
     document.getElementById('f6_color').value = lastColor;
     updatePosToggleUI();
   };
@@ -456,7 +492,7 @@
     if(element) element.classList.add('active');
     document.getElementById('header-title').innerText = title;
     if(pageId === 'map') { updateMapDropdowns(); drawMap(null, null, true); }
-    if(pageId === 'fdc') { updateMapDropdowns(); document.getElementById('polar-fo-e').value = pad5(sys.fo.e); document.getElementById('polar-fo-n').value = pad5(sys.fo.n); }
+    if(pageId === 'fdc') { updateMapDropdowns(); updateFODropdowns(); }
   }
 
   function switchSurveyView() {
@@ -480,8 +516,7 @@
   function loadInputs() {
     document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
     
-    document.getElementById('sys-lat').value = sys.lat; // 独立させた緯度
-    document.getElementById('sys-fo-e').value = pad5(sys.fo.e); document.getElementById('sys-fo-n').value = pad5(sys.fo.n);
+    document.getElementById('sys-lat').value = sys.lat; 
     
     document.getElementById('s1-e').value = pad5(sys.s1.e); document.getElementById('s1-n').value = pad5(sys.s1.n);
     document.getElementById('s1-alt-e').value = pad5(sys.s1.alt_e); document.getElementById('s1-alt-n').value = pad5(sys.s1.alt_n);
@@ -491,9 +526,6 @@
     
     document.getElementById('s3-e').value = pad5(sys.s3.e); document.getElementById('s3-n').value = pad5(sys.s3.n);
     document.getElementById('s3-alt-e').value = pad5(sys.s3.alt_e); document.getElementById('s3-alt-n').value = pad5(sys.s3.alt_n);
-    
-    // FDCタブの極座標(初期値)
-    document.getElementById('polar-fo-e').value = pad5(sys.fo.e); document.getElementById('polar-fo-n').value = pad5(sys.fo.n);
   }
 
   function switchSettingsPos(isAlt) {
@@ -513,14 +545,11 @@
   function saveBasePos() {
     const getV = (id) => document.getElementById(id).value === "" ? "" : Number(document.getElementById(id).value);
     sys.lat = getV('sys-lat') || 35.0;
-    sys.fo.e = getV('sys-fo-e'); sys.fo.n = getV('sys-fo-n');
     sys.s1.e = getV('s1-e'); sys.s1.n = getV('s1-n'); sys.s1.alt_e = getV('s1-alt-e'); sys.s1.alt_n = getV('s1-alt-n');
     sys.s2.e = getV('s2-e'); sys.s2.n = getV('s2-n'); sys.s2.alt_e = getV('s2-alt-e'); sys.s2.alt_n = getV('s2-alt-n');
     sys.s3.e = getV('s3-e'); sys.s3.n = getV('s3-n'); sys.s3.alt_e = getV('s3-alt-e'); sys.s3.alt_n = getV('s3-alt-n');
     localStorage.setItem('pwa_sys', JSON.stringify(sys)); 
-    
-    document.getElementById('polar-fo-e').value = pad5(sys.fo.e); document.getElementById('polar-fo-n').value = pad5(sys.fo.n);
-    alert("陣地・観測所データを保存しました。");
+    alert("陣地データを保存しました。");
   }
 
   function togglePosMode() {
@@ -544,7 +573,62 @@
   }
 
   // ==========================================
-  // 汎用GPS取得機能 (設定・極座標・座標リストすべてで共用)
+  // 【改修】FOの独立管理ロジック
+  // ==========================================
+  function renderFOList() {
+    let html = "";
+    savedFOs.forEach(fo => {
+        html += `<div class="flex" style="justify-content:space-between; padding:10px; border-bottom:1px solid var(--border-color); font-size:0.85rem;">
+            <div><strong style="color:#10b981;">${fo.name}</strong><br><span style="color:#888;">E:${pad5(fo.e)} N:${pad5(fo.n)}</span></div>
+            <button class="btn-red" style="width:auto; padding:5px 10px; margin:0;" onclick="deleteFO(${fo.id})">削除</button>
+        </div>`;
+    });
+    if(savedFOs.length === 0) { html = `<div style="padding:10px; color:#888; text-align:center; font-size:0.8rem;">登録されたFOはありません</div>`; }
+    document.getElementById('fo-list-container').innerHTML = html;
+    updateFODropdowns();
+  }
+
+  function addFO() {
+    let name = document.getElementById('new-fo-name').value;
+    let e = Number(document.getElementById('new-fo-e').value);
+    let n = Number(document.getElementById('new-fo-n').value);
+    if(!name || !e || !n) return alert("名称と座標をすべて入力してください");
+    
+    savedFOs.push({id: Date.now(), name: name, e: e, n: n});
+    localStorage.setItem('mgrsFOs', JSON.stringify(savedFOs));
+    renderFOList();
+    
+    document.getElementById('new-fo-name').value = "";
+    document.getElementById('new-fo-e').value = "";
+    document.getElementById('new-fo-n').value = "";
+  }
+
+  function deleteFO(id) {
+    savedFOs = savedFOs.filter(fo => fo.id !== id);
+    localStorage.setItem('mgrsFOs', JSON.stringify(savedFOs));
+    renderFOList();
+  }
+
+  function updateFODropdowns() {
+    let html = '<option value="">--- FOを選択 ---</option>';
+    savedFOs.forEach(fo => { html += `<option value="${fo.id}">${fo.name}</option>`; });
+    document.getElementById('polar-fo-select').innerHTML = html;
+  }
+
+  function loadFOForPolar() {
+    let sel = document.getElementById('polar-fo-select').value;
+    if(sel) {
+        let fo = savedFOs.find(f => f.id == sel);
+        if(fo) {
+            document.getElementById('polar-fo-e').value = pad5(fo.e);
+            document.getElementById('polar-fo-n').value = pad5(fo.n);
+        }
+    }
+  }
+
+
+  // ==========================================
+  // 汎用GPS取得機能
   // ==========================================
   function latLonToUTM(lat, lon) {
     const a = 6378137.0; const f = 1 / 298.257223563; const k0 = 0.9996; const eccSquared = 2*f - f*f;
@@ -607,9 +691,12 @@
     if(sel) { let p = savedPoints.find(pt => pt.id == sel); if(p) { updateTargetAndSave(p.e, p.n); autoSelectCharge(); } }
   }
 
-  // 【改修】FDCタブ内での極座標計算
   function toggleFdcPolar() {
     document.getElementById('fdc-polar-area').classList.toggle('hidden');
+  }
+
+  function toggleFdcAdjust() {
+    document.getElementById('fdc-adjust-area').classList.toggle('hidden');
   }
 
   function calcPolarInFDC() {
@@ -623,15 +710,30 @@
     updateTargetAndSave(fe + dist * Math.sin(rad), fn + dist * Math.cos(rad));
     autoSelectCharge(); 
     
-    // 入力エリアを閉じ、数値をクリアしてスッキリさせる
     toggleFdcPolar();
     document.getElementById('polar-azm').value = "";
     document.getElementById('polar-dist').value = "";
   }
 
-  function gotoAdjustFire() {
-    switchTab('survey', '観測・測量', document.querySelectorAll('.tab')[1]);
-    document.getElementById('survey-menu').value = 'surv-adjust'; switchSurveyView();
+  // 【改修】FDC内で完結する修正射撃
+  function calcAdjustInFDC() {
+    let otAzm=Number(document.getElementById('adj-azm').value); 
+    let rl=Number(document.getElementById('adj-rl').value); 
+    let ad=Number(document.getElementById('adj-ad').value);
+    if(!otAzm) return alert("OT方位角を入力してください");
+    
+    let rad = otAzm * (Math.PI / 3200.0);
+    let e = sys.tgt.e + ad * Math.sin(rad) + rl * Math.sin(rad + Math.PI/2); 
+    let n = sys.tgt.n + ad * Math.cos(rad) + rl * Math.cos(rad + Math.PI/2);
+    
+    updateTargetAndSave(e, n);
+    document.getElementById('adj-rl').value = 0; document.getElementById('adj-ad').value = 0;
+    
+    autoSelectCharge(); 
+    calculateMission(); // 即座に再計算
+    
+    // 入力エリアを閉じてスッキリさせる
+    toggleFdcAdjust();
   }
 
   function endMission() {
@@ -715,14 +817,29 @@
     localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList();
   }
 
-  function calcAdjust() {
-    let otAzm=Number(document.getElementById('adj-azm').value); let rl=Number(document.getElementById('adj-rl').value); let ad=Number(document.getElementById('adj-ad').value);
-    if(!otAzm) return alert("入力エラー");
-    let rad = otAzm * (Math.PI / 3200.0);
-    let e = sys.tgt.e + ad * Math.sin(rad) + rl * Math.sin(rad + Math.PI/2); let n = sys.tgt.n + ad * Math.cos(rad) + rl * Math.cos(rad + Math.PI/2);
-    updateTargetAndSave(e, n);
-    document.getElementById('adj-rl').value = 0; document.getElementById('adj-ad').value = 0;
-    autoSelectCharge(); switchTab('fdc', '射撃指揮 (FDC)', document.querySelectorAll('.tab')[0]); calculateMission();
+  // 【改修】測量タブ：座標対座標 (Point to Point)
+  function calcP2P() {
+    let ae = Number(document.getElementById('p2p-a-e').value); let an = Number(document.getElementById('p2p-a-n').value);
+    let be = Number(document.getElementById('p2p-b-e').value); let bn = Number(document.getElementById('p2p-b-n').value);
+    if(!ae||!an||!be||!bn) return;
+    let dx = be - ae; let dy = bn - an;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    let rad = Math.atan2(dx, dy); let mil = rad * (3200 / Math.PI); if(mil<0) mil+=6400;
+    let res = document.getElementById('res-p2p');
+    res.innerHTML = `方位角: ${pad4(mil)} mil<br>距離: ${Math.round(dist)} m`;
+    res.classList.remove('hidden');
+  }
+
+  // 【改修】測量タブ：方位角と距離から座標 (Dir & Dist)
+  function calcDirDist() {
+    let e = Number(document.getElementById('dd-e').value); let n = Number(document.getElementById('dd-n').value);
+    let azm = Number(document.getElementById('dd-azm').value); let dist = Number(document.getElementById('dd-dist').value);
+    if(!e||!n||!azm||!dist) return;
+    let rad = azm * (Math.PI / 3200.0);
+    let resE = e + dist * Math.sin(rad); let resN = n + dist * Math.cos(rad);
+    let res = document.getElementById('res-dd');
+    res.innerHTML = `到達点: E:${pad5(resE)} N:${pad5(resN)} <br><button onclick="saveSurveyResult(${resE},${resN},'DirDist')" class="btn-gps" style="margin-top:5px;">この座標を保存</button>`;
+    res.classList.remove('hidden');
   }
 
   function calcF3() {
@@ -732,7 +849,7 @@
     let tan1 = Math.tan(Math.PI/2 - (az1 * Math.PI/3200)); let tan2 = Math.tan(Math.PI/2 - (az2 * Math.PI/3200));
     let res = document.getElementById('res3');
     if (Math.abs(tan1 - tan2) < 0.0001) { res.innerHTML = '<span style="color:red">交点なし (平行等)</span>'; }
-    else { let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; res.innerHTML = `交点: E:${pad5(intX)} N:${pad5(intY)} <button onclick="saveSurveyResult(${intX},${intY},'Intersect')" class="btn-gps">保存</button>`; }
+    else { let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; res.innerHTML = `交点: E:${pad5(intX)} N:${pad5(intY)} <br><button onclick="saveSurveyResult(${intX},${intY},'Intersect')" class="btn-gps" style="margin-top:5px;">保存</button>`; }
     res.classList.remove('hidden');
   }
 
@@ -743,7 +860,7 @@
     let tan1 = Math.tan(Math.PI/2 - (((az1 + 3200) % 6400) * Math.PI/3200)); let tan2 = Math.tan(Math.PI/2 - (((az2 + 3200) % 6400) * Math.PI/3200));
     let res = document.getElementById('res4');
     if (Math.abs(tan1 - tan2) < 0.0001) res.innerHTML = '<span style="color:red">交点なし (平行等)</span>';
-    else { let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; res.innerHTML = `現在地: E:${pad5(intX)} N:${pad5(intY)} <button onclick="saveSurveyResult(${intX},${intY},'Resect')" class="btn-gps">保存</button>`; }
+    else { let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; res.innerHTML = `現在地: E:${pad5(intX)} N:${pad5(intY)} <br><button onclick="saveSurveyResult(${intX},${intY},'Resect')" class="btn-gps" style="margin-top:5px;">保存</button>`; }
     res.classList.remove('hidden');
   }
 
@@ -752,7 +869,7 @@
     let cx = Number(document.getElementById('f5_x').value); let cy = Number(document.getElementById('f5_y').value); if(!cx||!cy) return;
     let azInputs = document.querySelectorAll('.r_az'); let distInputs = document.querySelectorAll('.r_dist');
     for (let i = 0; i < azInputs.length; i++) { let az = Number(azInputs[i].value); let dist = Number(distInputs[i].value); if (!az || !dist) continue; cx = cx + dist * Math.sin(az * Math.PI/3200); cy = cy + dist * Math.cos(az * Math.PI/3200); }
-    let res = document.getElementById('res5'); res.innerHTML = `到達点: E:${pad5(cx)} N:${pad5(cy)} <button onclick="saveSurveyResult(${cx},${cy},'Trav')" class="btn-gps">保存</button>`; res.classList.remove('hidden');
+    let res = document.getElementById('res5'); res.innerHTML = `到達点: E:${pad5(cx)} N:${pad5(cy)} <br><button onclick="saveSurveyResult(${cx},${cy},'Trav')" class="btn-gps" style="margin-top:5px;">保存</button>`; res.classList.remove('hidden');
   }
 
   // ==========================================
@@ -810,8 +927,6 @@
   function updateMapDropdowns() {
     let html = '<option value="">--- 選択 ---</option>'; 
     savedPoints.forEach(p => { html += `<option value="${p.id}">${p.name}</option>`; });
-    document.getElementById('map_start').innerHTML = html; 
-    document.getElementById('map_end').innerHTML = html; 
     document.getElementById('fdc_target_select').innerHTML = html;
   }
   
@@ -824,13 +939,6 @@
   }
   function clearMapOverlay() { mapOverlay = null; localStorage.removeItem('mgrsMapOverlay'); drawMap(null, null, true); }
 
-  function calcMap() {
-    let sId = document.getElementById('map_start').value; let eId = document.getElementById('map_end').value; if (!sId || !eId) return;
-    currentP1 = savedPoints.find(p => p.id == sId); currentP2 = savedPoints.find(p => p.id == eId);
-    let dx = currentP2.e - currentP1.e; let dy = currentP2.n - currentP1.n;
-    let dist = Math.sqrt(dx*dx + dy*dy); let rad = Math.atan2(dx, dy); let mil = rad * (3200 / Math.PI); if(mil<0) mil+=6400;
-    document.getElementById('resMap').innerHTML = `【${currentP1.name} → ${currentP2.name}】<br>方位角: ${pad4(mil)} mil<br>距離: ${Math.round(dist)} m`; document.getElementById('resMap').classList.remove('hidden'); drawMap(currentP1, currentP2, false);
-  }
   function resetMapView() { drawMap(currentP1, currentP2, true); }
 
   function drawMap(highlightP1 = null, highlightP2 = null, resetView = false) {
@@ -847,8 +955,9 @@
     if(e2 && n2) pointsToBound.push({e: Number(e2), n: Number(n2), name:"S2", color:"#3b82f6"}); 
     if(e3 && n3) pointsToBound.push({e: Number(e3), n: Number(n3), name:"S3", color:"#3b82f6"}); 
     
-    // FOとTGTをプロット
-    if(sys.fo.e && sys.fo.n) pointsToBound.push({e: sys.fo.e, n: sys.fo.n, name:"FO", color:"#10b981"});
+    // 【改修】登録済みFOをすべてプロット
+    savedFOs.forEach(fo => { pointsToBound.push({e: fo.e, n: fo.n, name: fo.name, color:"#10b981"}); });
+    
     pointsToBound.push({e:sys.tgt.e, n:sys.tgt.n, name:"TGT", color:"#ef4444"});
     
     if (mapOverlay) { pointsToBound.push({e: mapOverlay.tl_e, n: mapOverlay.tl_n}); pointsToBound.push({e: mapOverlay.br_e, n: mapOverlay.br_n}); }
