@@ -85,6 +85,9 @@
     .modal-close { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); opacity: 0.7; }
     .modal-content h2, .modal-content h3 { color: var(--primary); }
     .modal-content ul, .modal-content p { font-size: 0.85rem; line-height: 1.5; opacity: 0.9; }
+    
+    optgroup { color: var(--primary); font-style: normal; font-weight: bold; }
+    option { color: var(--input-text); }
   </style>
 </head>
 <body>
@@ -133,7 +136,7 @@
         <label>目標リスト(Points)から選択</label>
         <div class="flex">
           <select id="fdc_target_select" onchange="loadTargetFromSelect()"></select>
-          <button class="btn-gray" onclick="updateMapDropdowns()" style="width:auto; padding:10px; margin-bottom:12px;">🔄</button>
+          <button class="btn-gray" onclick="updateAllDropdowns()" style="width:auto; padding:10px; margin-bottom:12px;">🔄</button>
         </div>
       </div>
       <div class="flex">
@@ -522,8 +525,8 @@
     document.getElementById('page-' + pageId).classList.add('active');
     if(element) element.classList.add('active');
     document.getElementById('header-title').innerText = title;
-    if(pageId === 'map') { updateMapDropdowns(); drawMap(null, null, true); }
-    if(pageId === 'fdc') { updateMapDropdowns(); updateFODropdowns(); }
+    if(pageId === 'map') { updateAllDropdowns(); drawMap(null, null, true); }
+    if(pageId === 'fdc') { updateAllDropdowns(); updateFODropdowns(); }
   }
 
   function switchSurveyView() {
@@ -573,7 +576,10 @@
     sys.s1.e = getV('s1-e'); sys.s1.n = getV('s1-n'); sys.s1.alt_e = getV('s1-alt-e'); sys.s1.alt_n = getV('s1-alt-n');
     sys.s2.e = getV('s2-e'); sys.s2.n = getV('s2-n'); sys.s2.alt_e = getV('s2-alt-e'); sys.s2.alt_n = getV('s2-alt-n');
     sys.s3.e = getV('s3-e'); sys.s3.n = getV('s3-n'); sys.s3.alt_e = getV('s3-alt-e'); sys.s3.alt_n = getV('s3-alt-n');
-    localStorage.setItem('pwa_sys', JSON.stringify(sys)); alert("陣地データを保存しました。");
+    localStorage.setItem('pwa_sys', JSON.stringify(sys)); 
+    updateAllDropdowns();
+    drawMap(currentP1, currentP2, false);
+    alert("陣地データを保存しました。");
   }
 
   function togglePosMode() {
@@ -593,7 +599,9 @@
     let html = "";
     savedFOs.forEach(fo => { html += `<div class="flex" style="justify-content:space-between; padding:10px; border-bottom:1px solid var(--border-color); font-size:0.85rem;"><div><strong style="color:#10b981;">${fo.name}</strong><br><span style="color:#888;">E:${pad5(fo.e)} N:${pad5(fo.n)}</span></div><button class="btn-red" style="width:auto; padding:5px 10px; margin:0;" onclick="deleteFO(${fo.id})">削除</button></div>`; });
     if(savedFOs.length === 0) { html = `<div style="padding:10px; color:#888; text-align:center; font-size:0.8rem;">登録されたFOはありません</div>`; }
-    document.getElementById('fo-list-container').innerHTML = html; updateFODropdowns();
+    document.getElementById('fo-list-container').innerHTML = html; 
+    updateFODropdowns();
+    updateAllDropdowns();
   }
 
   function addFO() {
@@ -645,7 +653,6 @@
     localStorage.setItem('pwa_charges', JSON.stringify(charges)); alert("装薬データを保存しました。");
   }
 
-  // 【改修】目標の「新規セット（原点更新）」と「ズラし（原点維持）」の分離
   function setNewTarget(e, n) {
     sys.tgt_base = { e: Math.round(e), n: Math.round(n) };
     sys.tgt = { e: Math.round(e), n: Math.round(n) };
@@ -671,7 +678,9 @@
 
   function loadTargetFromSelect() {
     let sel = document.getElementById('fdc_target_select').value;
-    if(sel) { let p = savedPoints.find(pt => pt.id == sel); if(p) { setNewTarget(p.e, p.n); autoSelectCharge(); } }
+    if(!sel) return;
+    let p = getPointByValue(sel);
+    if(p) { setNewTarget(p.e, p.n); autoSelectCharge(); }
   }
 
   function toggleFdcPolar() { document.getElementById('fdc-polar-area').classList.toggle('hidden'); }
@@ -694,7 +703,7 @@
     let e = sys.tgt.e + ad * Math.sin(rad) + rl * Math.sin(rad + Math.PI/2); let n = sys.tgt.n + ad * Math.cos(rad) + rl * Math.cos(rad + Math.PI/2);
     
     shiftTarget(e, n); 
-    document.getElementById('adj-rl').value = ""; document.getElementById('adj-ad').value = ""; // 入力後は空欄に戻す
+    document.getElementById('adj-rl').value = ""; document.getElementById('adj-ad').value = ""; 
     autoSelectCharge(); calculateMission(); toggleFdcAdjust();
   }
 
@@ -741,7 +750,6 @@
     let rawE = Number(document.getElementById('tgt-e').value); let rawN = Number(document.getElementById('tgt-n').value);
     if(!rawE || !rawN) { alert("目標座標を入力してください"); return; }
     
-    // 手入力で現在のsys.tgtから変化があった場合は「新たな目標」として原点をリセットする
     if(sys.tgt.e !== rawE || sys.tgt.n !== rawN) { 
         sys.tgt_base = { e: rawE, n: rawN }; 
         sys.tgt = { e: rawE, n: rawN }; 
@@ -799,17 +807,59 @@
   // ==========================================
   // 測量ロジック (リストからの自動入力対応)
   // ==========================================
-  function updateMapDropdowns() {
-    let html = '<option value="">--- リストから選択 ---</option>'; 
-    savedPoints.forEach(p => { html += `<option value="${p.id}">${p.name}</option>`; });
-    document.getElementById('fdc_target_select').innerHTML = html;
-    document.getElementById('map_start').innerHTML = html; 
-    document.getElementById('map_end').innerHTML = html; 
-    document.querySelectorAll('.pt-select').forEach(sel => sel.innerHTML = html);
+  
+  // 【改修】ドロップダウンの分離・包括機能
+  function updateAllDropdowns() {
+    // 1. FDC目標選択用 (目標リスト: savedPoints のみ)
+    let fdcHtml = '<option value="">--- リストから選択 ---</option>'; 
+    savedPoints.forEach(p => { fdcHtml += `<option value="pt_${p.id}">${p.name}</option>`; });
+    document.getElementById('fdc_target_select').innerHTML = fdcHtml;
+    
+    // 2. 測量・マップ用 (目標 + FO + 主陣地 + 予備陣地)
+    let allHtml = '<option value="">--- リストから選択 ---</option>';
+    if(savedPoints.length > 0) {
+        allHtml += '<optgroup label="登録目標(Points)">';
+        savedPoints.forEach(p => { allHtml += `<option value="pt_${p.id}">${p.name}</option>`; });
+        allHtml += '</optgroup>';
+    }
+    if(savedFOs.length > 0) {
+        allHtml += '<optgroup label="観測所(FO)">';
+        savedFOs.forEach(fo => { allHtml += `<option value="fo_${fo.id}">${fo.name}</option>`; });
+        allHtml += '</optgroup>';
+    }
+    allHtml += '<optgroup label="主陣地(Pri)">';
+    if(sys.s1.e) allHtml += `<option value="s1_pri">第1分隊 (Pri)</option>`;
+    if(sys.s2.e) allHtml += `<option value="s2_pri">第2分隊 (Pri) / 基準砲</option>`;
+    if(sys.s3.e) allHtml += `<option value="s3_pri">第3分隊 (Pri)</option>`;
+    allHtml += '</optgroup>';
+    
+    allHtml += '<optgroup label="予備陣地(Alt)">';
+    if(sys.s1.alt_e) allHtml += `<option value="s1_alt">第1分隊 (Alt)</option>`;
+    if(sys.s2.alt_e) allHtml += `<option value="s2_alt">第2分隊 (Alt) / 基準砲</option>`;
+    if(sys.s3.alt_e) allHtml += `<option value="s3_alt">第3分隊 (Alt)</option>`;
+    allHtml += '</optgroup>';
+
+    document.getElementById('map_start').innerHTML = allHtml; 
+    document.getElementById('map_end').innerHTML = allHtml; 
+    document.querySelectorAll('.pt-select').forEach(sel => sel.innerHTML = allHtml);
+  }
+
+  // リスト選択からの情報抽出
+  function getPointByValue(val) {
+    if(!val) return null;
+    if(val.startsWith('pt_')) { let id = parseInt(val.replace('pt_','')); return savedPoints.find(p => p.id === id); }
+    else if(val.startsWith('fo_')) { let id = parseInt(val.replace('fo_','')); return savedFOs.find(p => p.id === id); }
+    else if(val === 's1_pri') { return { e: Number(sys.s1.e), n: Number(sys.s1.n), name: 'S1(Pri)', z: null }; }
+    else if(val === 's2_pri') { return { e: Number(sys.s2.e), n: Number(sys.s2.n), name: 'S2(Pri)', z: null }; }
+    else if(val === 's3_pri') { return { e: Number(sys.s3.e), n: Number(sys.s3.n), name: 'S3(Pri)', z: null }; }
+    else if(val === 's1_alt') { return { e: Number(sys.s1.alt_e), n: Number(sys.s1.alt_n), name: 'S1(Alt)', z: null }; }
+    else if(val === 's2_alt') { return { e: Number(sys.s2.alt_e), n: Number(sys.s2.alt_n), name: 'S2(Alt)', z: null }; }
+    else if(val === 's3_alt') { return { e: Number(sys.s3.alt_e), n: Number(sys.s3.alt_n), name: 'S3(Alt)', z: null }; }
+    return null;
   }
 
   function applyPt(sel, eId, nId) {
-    let p = savedPoints.find(pt => pt.id == sel.value);
+    let p = getPointByValue(sel.value);
     if(p) { 
         document.getElementById(eId).value = pad5(p.e); document.getElementById(nId).value = pad5(p.n); 
         formatCoord(document.getElementById(eId)); formatCoord(document.getElementById(nId));
@@ -892,7 +942,8 @@
       let pColor = p.color || '#ff3b30'; let zTxt = p.z ? ` Z:${p.z}m` : '';
       html += `<div class="list-item" data-id="${p.id}"><div class="drag-handle">≡</div><div style="flex:1; margin-left:5px;"><strong><span style="display:inline-block; width:12px; height:12px; background:${pColor}; border-radius:50%; margin-right:5px;"></span>${p.name}</strong><br><span style="font-size:0.85rem; color:#888;">E:${pad5(p.e)} N:${pad5(p.n)}${zTxt}</span></div><div style="display:flex; gap:5px;"><button class="btn-gray" style="padding:6px; margin:0;" onclick="editPoint(${p.id})">編</button><button class="btn-red" style="padding:6px; margin:0;" onclick="deletePoint(${p.id})">削</button></div></div>`;
     });
-    document.getElementById('savedList').innerHTML = html; updateMapDropdowns();
+    document.getElementById('savedList').innerHTML = html; 
+    updateAllDropdowns();
   }
   
   const listContainer = document.getElementById('savedList'); let dragEl = null;
@@ -927,7 +978,7 @@
 
   function calcMap() {
     let sId = document.getElementById('map_start').value; let eId = document.getElementById('map_end').value; if (!sId || !eId) return;
-    currentP1 = savedPoints.find(p => p.id == sId); currentP2 = savedPoints.find(p => p.id == eId);
+    currentP1 = getPointByValue(sId); currentP2 = getPointByValue(eId);
     let dx = currentP2.e - currentP1.e; let dy = currentP2.n - currentP1.n;
     let dist = Math.sqrt(dx*dx + dy*dy); let rad = Math.atan2(dx, dy); let mil = rad * (3200 / Math.PI); if(mil<0) mil+=6400;
     
@@ -944,26 +995,31 @@
   }
   function resetMapView() { drawMap(currentP1, currentP2, true); }
 
+  // 【改修】両陣地の同時プロット
   function drawMap(highlightP1 = null, highlightP2 = null, resetView = false) {
     let canvas = document.getElementById('mapCanvas'); let ctx = canvas.getContext('2d'); let w = canvas.width = canvas.offsetWidth; let h = canvas.height = canvas.offsetHeight;
     const style = getComputedStyle(document.body); const cBg = style.getPropertyValue('--map-bg').trim(); const cGrid1km = style.getPropertyValue('--map-grid-1km').trim(); const cGrid100m = style.getPropertyValue('--map-grid-100m').trim(); const cText = style.getPropertyValue('--map-text').trim(); const cGridHalo = style.getPropertyValue('--map-grid-halo').trim(); const cTextHalo = style.getPropertyValue('--map-text-halo').trim();
     ctx.fillStyle = cBg; ctx.fillRect(0, 0, w, h);
 
     let pointsToBound = [...savedPoints]; 
-    let e1 = sys.use_alt ? sys.s1.alt_e : sys.s1.e; let n1 = sys.use_alt ? sys.s1.alt_n : sys.s1.n;
-    let e2 = sys.use_alt ? sys.s2.alt_e : sys.s2.e; let n2 = sys.use_alt ? sys.s2.alt_n : sys.s2.n;
-    let e3 = sys.use_alt ? sys.s3.alt_e : sys.s3.e; let n3 = sys.use_alt ? sys.s3.alt_n : sys.s3.n;
     
-    if(e1 && n1) pointsToBound.push({e: Number(e1), n: Number(n1), name:"S1", color:"#3b82f6"}); 
-    if(e2 && n2) pointsToBound.push({e: Number(e2), n: Number(n2), name:"S2", color:"#3b82f6"}); 
-    if(e3 && n3) pointsToBound.push({e: Number(e3), n: Number(n3), name:"S3", color:"#3b82f6"}); 
+    // 主陣地 (Pri) を常に追加 (青色)
+    if(sys.s1.e && sys.s1.n) pointsToBound.push({e: Number(sys.s1.e), n: Number(sys.s1.n), name:"S1(Pri)", color:"#3b82f6"}); 
+    if(sys.s2.e && sys.s2.n) pointsToBound.push({e: Number(sys.s2.e), n: Number(sys.s2.n), name:"S2(Pri)", color:"#3b82f6"}); 
+    if(sys.s3.e && sys.s3.n) pointsToBound.push({e: Number(sys.s3.e), n: Number(sys.s3.n), name:"S3(Pri)", color:"#3b82f6"}); 
+    
+    // 予備陣地 (Alt) も常に追加 (オレンジ/警告色)
+    if(sys.s1.alt_e && sys.s1.alt_n) pointsToBound.push({e: Number(sys.s1.alt_e), n: Number(sys.s1.alt_n), name:"S1(Alt)", color:"#f59e0b"}); 
+    if(sys.s2.alt_e && sys.s2.alt_n) pointsToBound.push({e: Number(sys.s2.alt_e), n: Number(sys.s2.alt_n), name:"S2(Alt)", color:"#f59e0b"}); 
+    if(sys.s3.alt_e && sys.s3.alt_n) pointsToBound.push({e: Number(sys.s3.alt_e), n: Number(sys.s3.alt_n), name:"S3(Alt)", color:"#f59e0b"}); 
     
     savedFOs.forEach(fo => { pointsToBound.push({e: fo.e, n: fo.n, name: fo.name, color:"#10b981"}); });
-    pointsToBound.push({e:sys.tgt.e, n:sys.tgt.n, name:"TGT", color:"#ef4444"});
+    if(sys.tgt.e) pointsToBound.push({e:sys.tgt.e, n:sys.tgt.n, name:"TGT", color:"#ef4444"});
     
     if (mapOverlay) { pointsToBound.push({e: mapOverlay.tl_e, n: mapOverlay.tl_n}); pointsToBound.push({e: mapOverlay.br_e, n: mapOverlay.br_n}); }
 
     if (resetView) {
+      if(pointsToBound.length === 0) return;
       mapState.refE = pointsToBound[0].e; mapState.refN = pointsToBound[0].n; let minDx = 0, maxDx = 0, minDy = 0, maxDy = 0;
       pointsToBound.forEach(p => { let dx = p.e - mapState.refE; let dy = p.n - mapState.refN; if (dx < minDx) minDx = dx; if (dx > maxDx) maxDx = dx; if (dy < minDy) minDy = dy; if (dy > maxDy) maxDy = dy; });
       if (maxDx - minDx < 1000) { let mid = (maxDx + minDx)/2; minDx = mid - 500; maxDx = mid + 500; } if (maxDy - minDy < 1000) { let mid = (maxDy + minDy)/2; minDy = mid - 500; maxDy = mid + 500; }
