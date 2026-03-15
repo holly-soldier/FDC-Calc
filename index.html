@@ -182,8 +182,8 @@
         <div id="fdc-adjust-area" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color);">
           <label>OT方位角 (mil)</label><input type="number" id="adj-azm" placeholder="例: 0800">
           <div class="flex">
-            <div><label>左右 (右+, 左-)</label><input type="number" id="adj-rl" value="0"></div>
-            <div><label>遠近 (奥+, 手前-)</label><input type="number" id="adj-ad" value="0"></div>
+            <div><label>左右 (右+, 左-)</label><input type="number" id="adj-rl" placeholder="0"></div>
+            <div><label>遠近 (奥+, 手前-)</label><input type="number" id="adj-ad" placeholder="0"></div>
           </div>
           <button onclick="calcAdjustInFDC()" class="btn-red" style="margin:0; padding:8px; font-size:0.9rem;">修正を適用して再計算</button>
           
@@ -508,7 +508,7 @@
   }
   function pad4(num) { return String(Math.round(num)).padStart(4, '0'); }
 
-  // 【改修】3桁・4桁の自動補完（上桁読み取り）
+  // 3桁・4桁の自動補完（上桁読み取り）
   function formatCoord(el) {
     if(!el.value) return;
     let val = String(el.value).trim();
@@ -645,9 +645,19 @@
     localStorage.setItem('pwa_charges', JSON.stringify(charges)); alert("装薬データを保存しました。");
   }
 
-  function updateTargetAndSave(e, n) {
+  // 【改修】目標の「新規セット（原点更新）」と「ズラし（原点維持）」の分離
+  function setNewTarget(e, n) {
+    sys.tgt_base = { e: Math.round(e), n: Math.round(n) };
+    sys.tgt = { e: Math.round(e), n: Math.round(n) };
+    document.getElementById('tgt-e').value = pad5(sys.tgt.e);
+    document.getElementById('tgt-n').value = pad5(sys.tgt.n);
+    localStorage.setItem('pwa_sys', JSON.stringify(sys));
+  }
+
+  function shiftTarget(e, n) {
     sys.tgt.e = Math.round(e); sys.tgt.n = Math.round(n);
-    document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
+    document.getElementById('tgt-e').value = pad5(sys.tgt.e);
+    document.getElementById('tgt-n').value = pad5(sys.tgt.n);
     localStorage.setItem('pwa_sys', JSON.stringify(sys));
   }
 
@@ -661,7 +671,7 @@
 
   function loadTargetFromSelect() {
     let sel = document.getElementById('fdc_target_select').value;
-    if(sel) { let p = savedPoints.find(pt => pt.id == sel); if(p) { updateTargetAndSave(p.e, p.n); autoSelectCharge(); } }
+    if(sel) { let p = savedPoints.find(pt => pt.id == sel); if(p) { setNewTarget(p.e, p.n); autoSelectCharge(); } }
   }
 
   function toggleFdcPolar() { document.getElementById('fdc-polar-area').classList.toggle('hidden'); }
@@ -670,20 +680,24 @@
   function calcPolarInFDC() {
     let fe = Number(document.getElementById('polar-fo-e').value); let fn = Number(document.getElementById('polar-fo-n').value); let azm = Number(document.getElementById('polar-azm').value); let dist = Number(document.getElementById('polar-dist').value);
     if(!fe || !fn || !azm || !dist) return alert("入力エラー");
-    let rad = azm * (Math.PI / 3200.0); updateTargetAndSave(fe + dist * Math.sin(rad), fn + dist * Math.cos(rad));
+    let rad = azm * (Math.PI / 3200.0); 
+    setNewTarget(fe + dist * Math.sin(rad), fn + dist * Math.cos(rad));
     autoSelectCharge(); toggleFdcPolar(); document.getElementById('polar-azm').value = ""; document.getElementById('polar-dist').value = "";
   }
 
   function calcAdjustInFDC() {
-    let otAzm=Number(document.getElementById('adj-azm').value); let rl=Number(document.getElementById('adj-rl').value); let ad=Number(document.getElementById('adj-ad').value);
+    let otAzm=Number(document.getElementById('adj-azm').value); 
+    let rl=Number(document.getElementById('adj-rl').value) || 0; 
+    let ad=Number(document.getElementById('adj-ad').value) || 0;
     if(!otAzm) return alert("OT方位角を入力してください");
     let rad = otAzm * (Math.PI / 3200.0);
     let e = sys.tgt.e + ad * Math.sin(rad) + rl * Math.sin(rad + Math.PI/2); let n = sys.tgt.n + ad * Math.cos(rad) + rl * Math.cos(rad + Math.PI/2);
-    updateTargetAndSave(e, n); document.getElementById('adj-rl').value = 0; document.getElementById('adj-ad').value = 0;
+    
+    shiftTarget(e, n); 
+    document.getElementById('adj-rl').value = ""; document.getElementById('adj-ad').value = ""; // 入力後は空欄に戻す
     autoSelectCharge(); calculateMission(); toggleFdcAdjust();
   }
 
-  // 【改修】累積修正の登録と適用
   function registerGlobalCorrection() {
     let dE = sys.tgt.e - sys.tgt_base.e; let dN = sys.tgt.n - sys.tgt_base.n;
     sys.global_correction = { e: dE, n: dN, active: true };
@@ -727,8 +741,11 @@
     let rawE = Number(document.getElementById('tgt-e').value); let rawN = Number(document.getElementById('tgt-n').value);
     if(!rawE || !rawN) { alert("目標座標を入力してください"); return; }
     
-    // 新規目標かどうかの判定
-    if(sys.tgt.e !== rawE || sys.tgt.n !== rawN) { sys.tgt_base = { e: rawE, n: rawN }; sys.tgt = { e: rawE, n: rawN }; }
+    // 手入力で現在のsys.tgtから変化があった場合は「新たな目標」として原点をリセットする
+    if(sys.tgt.e !== rawE || sys.tgt.n !== rawN) { 
+        sys.tgt_base = { e: rawE, n: rawN }; 
+        sys.tgt = { e: rawE, n: rawN }; 
+    }
     localStorage.setItem('pwa_sys', JSON.stringify(sys));
     
     const chg = document.getElementById('charge-select').value; document.getElementById('res-charge-select').value = chg; 
@@ -746,7 +763,6 @@
 
     resultsData.forEach(item => {
       let html = `<div class="sqd-result"><div class="sqd-title">${item.n} <span>${item.r.tof ? item.r.tof.toFixed(1)+'秒' : ''}</span></div><div class="res-grid">`;
-      // 【改修】表示順を 方位角、射角 にし、距離をカッコで配置
       html += `<div>方位角: <span class="val">${pad4(item.r.azm)}₥</span></div>`;
       if(item.r.error) html += `<div>射角: <span style="color:gray">${item.r.error}</span></div>`;
       else html += `<div>射角: <span class="elev-val">${pad4(item.r.elev)}₥</span></div>`;
@@ -758,7 +774,6 @@
     if(baseSqd && !baseSqd.r.error && baseSqd.r.driftMils !== 0) { document.getElementById('drift-info').innerText = `※コリオリ偏流修正: ${baseSqd.r.driftMils > 0 ? '右' : '左'} ${Math.abs(baseSqd.r.driftMils)} mil適用済`; } 
     else { document.getElementById('drift-info').innerText = ""; }
     
-    // 転用登録の確認ポップアップ制御
     let promptArea = document.getElementById('global-correction-prompt');
     if(sys.global_correction.active && (sys.tgt.e === sys.tgt_base.e && sys.tgt.n === sys.tgt_base.n)) {
        promptArea.classList.remove('hidden');
@@ -910,7 +925,6 @@
   }
   function clearMapOverlay() { mapOverlay = null; localStorage.removeItem('mgrsMapOverlay'); drawMap(null, null, true); }
 
-  // 【改修】マップ測定：2点間の線と高低差・垂直角の計算
   function calcMap() {
     let sId = document.getElementById('map_start').value; let eId = document.getElementById('map_end').value; if (!sId || !eId) return;
     currentP1 = savedPoints.find(p => p.id == sId); currentP2 = savedPoints.find(p => p.id == eId);
@@ -974,7 +988,6 @@
     ctx.font = "bold 11px sans-serif"; ctx.textAlign="center"; for(let e=sE; e<=eE; e+=1000) { let x=getX(e); if(x>0&&x<w){ let t=pad5(e).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,x,h-5); ctx.fillStyle=cText; ctx.fillText(t,x,h-5); } }
     ctx.textAlign="left"; for(let n=sN; n<=eN; n+=1000) { let y=getY(n); if(y>0&&y<h){ let t=pad5(n).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,5,y+4); ctx.fillStyle=cText; ctx.fillText(t,5,y+4); } }
 
-    // 【改修】指定の2点間に線を引く（復活）
     if (highlightP1 && highlightP2) { ctx.strokeStyle = isNightMode ? '#ff3b30' : 'rgba(0,122,255,0.7)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(getX(highlightP1.e), getY(highlightP1.n)); ctx.lineTo(getX(highlightP2.e), getY(highlightP2.n)); ctx.stroke(); }
     
     pointsToBound.forEach(p => { let x = getX(p.e), y = getY(p.n); let pinColor = isNightMode ? '#ff3b30' : (p.color || '#ff3b30'); if(x > -20 && x < w + 20 && y > -20 && y < h + 20) { ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fillStyle = pinColor; ctx.fill(); ctx.strokeStyle = cBg; ctx.lineWidth = 1.5; ctx.stroke(); ctx.font = "bold 11px sans-serif"; ctx.lineWidth = 3; ctx.strokeStyle = cTextHalo; ctx.strokeText(p.name, x+8, y+4); ctx.fillStyle = isNightMode?'#ff3b30':'#333'; ctx.fillText(p.name, x+8, y+4); } });
