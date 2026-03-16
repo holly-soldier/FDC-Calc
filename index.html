@@ -142,7 +142,7 @@
       <div class="flex">
         <div style="flex:2;"><label>E座標</label><input type="number" id="tgt-e" onchange="formatCoord(this); autoSelectCharge()"></div>
         <div style="flex:2;"><label>N座標</label><input type="number" id="tgt-n" onchange="formatCoord(this); autoSelectCharge()"></div>
-        <div style="flex:1.5;"><label>標高 Z</label><input type="number" id="tgt-z" placeholder="任意"></div>
+        <div style="flex:1.5;"><label>標高 H</label><input type="number" id="tgt-z" placeholder="任意"></div>
       </div>
       <label>装薬 (Charge) <span style="font-size: 0.75rem; color: #888;">※距離に応じて自動選択</span></label>
       <select id="charge-select">
@@ -295,7 +295,7 @@
       <div class="flex">
         <div style="flex:2;"><input type="number" id="f6_x" placeholder="E座標 (必須)" onchange="formatCoord(this)"></div>
         <div style="flex:2;"><input type="number" id="f6_y" placeholder="N座標 (必須)" onchange="formatCoord(this)"></div>
-        <div style="flex:1.5;"><input type="number" id="f6_z" placeholder="Z(任意)"></div>
+        <div style="flex:1.5;"><input type="number" id="f6_z" placeholder="H(任意)"></div>
       </div>
       <div class="flex" style="margin-top:10px;">
         <button id="btn_manual_save" class="btn-green" onclick="savePointManual()">リストに登録</button>
@@ -379,7 +379,7 @@
         <div class="flex" style="margin-bottom:10px;">
           <div style="flex:2;"><input type="number" id="s1-e" placeholder="E" onchange="formatCoord(this)"></div>
           <div style="flex:2;"><input type="number" id="s1-n" placeholder="N" onchange="formatCoord(this)"></div>
-          <div style="flex:1.5;"><input type="number" id="s1-z" placeholder="Z(m)"></div>
+          <div style="flex:1.5;"><input type="number" id="s1-z" placeholder="H(m)"></div>
           <button class="btn-gps" onclick="getGPSFor('s1-e', 's1-n', 's1-z')" style="flex:1; padding:10px 5px;">📍</button>
         </div>
         
@@ -387,7 +387,7 @@
         <div class="flex" style="margin-bottom:10px;">
           <div style="flex:2;"><input type="number" id="s2-e" placeholder="E" onchange="formatCoord(this)"></div>
           <div style="flex:2;"><input type="number" id="s2-n" placeholder="N" onchange="formatCoord(this)"></div>
-          <div style="flex:1.5;"><input type="number" id="s2-z" placeholder="Z(m)"></div>
+          <div style="flex:1.5;"><input type="number" id="s2-z" placeholder="H(m)"></div>
           <button class="btn-gps" onclick="getGPSFor('s2-e', 's2-n', 's2-z')" style="flex:1; padding:10px 5px;">📍</button>
         </div>
         
@@ -395,7 +395,7 @@
         <div class="flex" style="margin-bottom:10px;">
           <div style="flex:2;"><input type="number" id="s3-e" placeholder="E" onchange="formatCoord(this)"></div>
           <div style="flex:2;"><input type="number" id="s3-n" placeholder="N" onchange="formatCoord(this)"></div>
-          <div style="flex:1.5;"><input type="number" id="s3-z" placeholder="Z(m)"></div>
+          <div style="flex:1.5;"><input type="number" id="s3-z" placeholder="H(m)"></div>
           <button class="btn-gps" onclick="getGPSFor('s3-e', 's3-n', 's3-z')" style="flex:1; padding:10px 5px;">📍</button>
         </div>
       </div>
@@ -410,7 +410,7 @@
         <div class="flex" style="margin-bottom:10px;">
           <div style="flex:2;"><input type="number" id="s1-alt-e" placeholder="E" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <div style="flex:2;"><input type="number" id="s1-alt-n" placeholder="N" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
-          <div style="flex:1.5;"><input type="number" id="s1-alt-z" placeholder="Z(m)" style="border-color:var(--warning);"></div>
+          <div style="flex:1.5;"><input type="number" id="s1-alt-z" placeholder="H(m)" style="border-color:var(--warning);"></div>
           <button class="btn-gps" onclick="getGPSFor('s1-alt-e', 's1-alt-n', 's1-alt-z')" style="flex:1; padding:10px 5px;">📍</button>
         </div>
         
@@ -418,7 +418,7 @@
         <div class="flex" style="margin-bottom:10px;">
           <div style="flex:2;"><input type="number" id="s2-alt-e" placeholder="E" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <div style="flex:2;"><input type="number" id="s2-alt-n" placeholder="N" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
-          <div style="flex:1.5;"><input type="number" id="s2-alt-z" placeholder="Z(m)" style="border-color:var(--warning);"></div>
+          <div style="flex:1.5;"><input type="number" id="s2-alt-z" placeholder="H(m)" style="border-color:var(--warning);"></div>
           <button class="btn-gps" onclick="getGPSFor('s2-alt-e', 's2-alt-n', 's2-alt-z')" style="flex:1; padding:10px 5px;">📍</button>
         </div>
         
@@ -426,7 +426,7 @@
         <div class="flex" style="margin-bottom:10px;">
           <div style="flex:2;"><input type="number" id="s3-alt-e" placeholder="E" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <div style="flex:2;"><input type="number" id="s3-alt-n" placeholder="N" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
-          <div style="flex:1.5;"><input type="number" id="s3-alt-z" placeholder="Z(m)" style="border-color:var(--warning);"></div>
+          <div style="flex:1.5;"><input type="number" id="s3-alt-z" placeholder="H(m)" style="border-color:var(--warning);"></div>
           <button class="btn-gps" onclick="getGPSFor('s3-alt-e', 's3-alt-n', 's3-alt-z')" style="flex:1; padding:10px 5px;">📍</button>
         </div>
       </div>
@@ -444,7 +444,7 @@
       <div class="flex">
         <div style="flex:2;"><input type="number" id="new-fo-e" placeholder="E座標" onchange="formatCoord(this)"></div>
         <div style="flex:2;"><input type="number" id="new-fo-n" placeholder="N座標" onchange="formatCoord(this)"></div>
-        <div style="flex:1.5;"><input type="number" id="new-fo-z" placeholder="標高 Z"></div>
+        <div style="flex:1.5;"><input type="number" id="new-fo-z" placeholder="標高 H"></div>
       </div>
       <button onclick="addFO()" class="btn-green" style="margin-bottom:15px; background:#10b981;">＋ FOをリストに追加</button>
       
@@ -475,7 +475,7 @@
     <ul>
       <li><b>座標の自動補完:</b> 座標欄に「3桁(例:123)」を入力すると自動で「12300」に、「4桁(例:1234)」なら「12340」へと上桁合わせの自動補完が行われます。</li>
       <li><b>修正量の転用:</b> FDC結果画面から修正射撃を行い「転用登録」すると、別の目標を新規計算した際に、過去の修正量が適用可能になります。</li>
-      <li><b>標高と高低差:</b> 陣地や目標に標高(Z)を入力しておくと、FDC計算時やマップ測定時に高低差が自動で算出・表示されます。</li>
+      <li><b>標高と高低差:</b> 陣地や目標に標高(H)を入力しておくと、FDC計算時やマップ測定時に高低差が自動で算出・表示されます。</li>
     </ul>
   </div>
 </div>
@@ -649,8 +649,8 @@
   function renderFOList() {
     let html = "";
     savedFOs.forEach(fo => { 
-        let zTxt = (fo.z !== null && fo.z !== undefined) ? ` Z:${fo.z}m` : '';
-        html += `<div class="flex" style="justify-content:space-between; padding:10px; border-bottom:1px solid var(--border-color); font-size:0.85rem;"><div><strong style="color:#10b981;">${fo.name}</strong><br><span style="color:#888;">E:${pad5(fo.e)} N:${pad5(fo.n)}${zTxt}</span></div><button class="btn-red" style="width:auto; padding:5px 10px; margin:0;" onclick="deleteFO(${fo.id})">削除</button></div>`; 
+        let hTxt = (fo.z !== null && fo.z !== undefined) ? ` H:${fo.z}m` : '';
+        html += `<div class="flex" style="justify-content:space-between; padding:10px; border-bottom:1px solid var(--border-color); font-size:0.85rem;"><div><strong style="color:#10b981;">${fo.name}</strong><br><span style="color:#888;">E:${pad5(fo.e)} N:${pad5(fo.n)}${hTxt}</span></div><button class="btn-red" style="width:auto; padding:5px 10px; margin:0;" onclick="deleteFO(${fo.id})">削除</button></div>`; 
     });
     if(savedFOs.length === 0) { html = `<div style="padding:10px; color:#888; text-align:center; font-size:0.8rem;">登録されたFOはありません</div>`; }
     document.getElementById('fo-list-container').innerHTML = html; 
@@ -1016,8 +1016,8 @@
   function updateSavedList() {
     let html = "";
     savedPoints.forEach((p) => {
-      let pColor = p.color || '#ef4444'; let zTxt = (p.z !== null && p.z !== undefined) ? ` Z:${p.z}m` : '';
-      html += `<div class="list-item" data-id="${p.id}"><div class="drag-handle">≡</div><div style="flex:1; margin-left:5px;"><strong><span style="display:inline-block; width:12px; height:12px; background:${pColor}; border-radius:50%; margin-right:5px;"></span>${p.name}</strong><br><span style="font-size:0.85rem; color:#888;">E:${pad5(p.e)} N:${pad5(p.n)}${zTxt}</span></div><div style="display:flex; gap:5px;"><button class="btn-gray" style="padding:6px; margin:0;" onclick="editPoint(${p.id})">編</button><button class="btn-red" style="padding:6px; margin:0;" onclick="deletePoint(${p.id})">削</button></div></div>`;
+      let pColor = p.color || '#ef4444'; let hTxt = (p.z !== null && p.z !== undefined) ? ` H:${p.z}m` : '';
+      html += `<div class="list-item" data-id="${p.id}"><div class="drag-handle">≡</div><div style="flex:1; margin-left:5px;"><strong><span style="display:inline-block; width:12px; height:12px; background:${pColor}; border-radius:50%; margin-right:5px;"></span>${p.name}</strong><br><span style="font-size:0.85rem; color:#888;">E:${pad5(p.e)} N:${pad5(p.n)}${hTxt}</span></div><div style="display:flex; gap:5px;"><button class="btn-gray" style="padding:6px; margin:0;" onclick="editPoint(${p.id})">編</button><button class="btn-red" style="padding:6px; margin:0;" onclick="deletePoint(${p.id})">削</button></div></div>`;
     });
     document.getElementById('savedList').innerHTML = html; 
     updateAllDropdowns();
@@ -1102,15 +1102,15 @@
     let dx = currentP2.e - currentP1.e; let dy = currentP2.n - currentP1.n;
     let dist = Math.sqrt(dx*dx + dy*dy); let rad = Math.atan2(dx, dy); let mil = rad * (3200 / Math.PI); if(mil<0) mil+=6400;
     
-    let zText = "";
+    let hText = "";
     if(currentP1.z !== null && currentP2.z !== null && currentP1.z !== undefined && currentP2.z !== undefined) {
        let dz = currentP2.z - currentP1.z;
        let vertRad = Math.atan2(dz, dist);
        let vertMil = vertRad * (3200 / Math.PI);
-       zText = `<br>高低差: ${Math.round(dz)} m<br>垂直角: ${Math.round(vertMil)} mil`;
+       hText = `<br>高低差: ${Math.round(dz)} m<br>垂直角: ${Math.round(vertMil)} mil`;
     }
 
-    document.getElementById('resMap').innerHTML = `【${currentP1.name} → ${currentP2.name}】<br>方位角: <span class="val">${pad4(mil)}</span> mil<br>水平距離: <span class="val">${Math.round(dist)}</span> m${zText}`; 
+    document.getElementById('resMap').innerHTML = `【${currentP1.name} → ${currentP2.name}】<br>方位角: <span class="val">${pad4(mil)}</span> mil<br>水平距離: <span class="val">${Math.round(dist)}</span> m${hText}`; 
     document.getElementById('resMap').classList.remove('hidden'); drawMap(currentP1, currentP2, false);
   }
   function resetMapView() { drawMap(currentP1, currentP2, true); }
