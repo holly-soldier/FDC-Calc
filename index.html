@@ -290,9 +290,6 @@
   <div id="page-points" class="page">
     <div class="card">
       <div class="flex" style="justify-content:space-between;"><h2>座標の手動・GPS登録</h2><button class="btn-gps" style="padding:6px 12px; margin:0;" onclick="getGPSFor('f6_x', 'f6_y')">📍GPS</button></div>
-      <div class="flex" style="margin-bottom:10px;">
-        <label style="margin:0; width:100px;">ピンの色</label><input type="color" id="f6_color" style="height:40px; padding:0; border:none; background:none;">
-      </div>
       <input type="text" id="f6_name" placeholder="名称 (例: TRP-1)">
       <div class="flex">
         <div><input type="number" id="f6_x" placeholder="E座標 (必須)" onchange="formatCoord(this)"></div>
@@ -307,13 +304,19 @@
 
     <div class="card">
       <div class="flex" style="justify-content:space-between; margin-bottom:10px;">
-        <h2 style="margin:0;">登録済み座標</h2>
+        <h2 style="margin:0;">登録済み目標(Points)</h2>
         <button class="btn-gray" onclick="toggleBatchIO()" style="width:auto; padding:6px 12px; margin:0; font-size:0.8rem;">📁 一括入出力</button>
       </div>
+      
       <div id="batch_io_area" class="hidden" style="margin-bottom:15px; border:1px solid var(--border-color); padding:10px; border-radius:5px;">
+        <p style="font-size:0.75rem; color:#888; margin-top:0;">
+          形式: [名前] [E座標] [N座標]<br>
+          ※名前を「S1_Pri」「FO_名称」等にすると対応リストへ自動振分されます。色コードは不要です。
+        </p>
         <textarea id="io_text" placeholder="ここにテキストを貼り付け"></textarea>
         <div class="flex"><button class="btn-green" onclick="importPoints()">読込</button><button class="btn-gray" onclick="exportPoints()">書出</button></div>
       </div>
+      
       <div class="flex" style="justify-content:flex-end; margin-bottom:10px;">
         <select id="sort_select" style="width:auto; padding:5px; font-size:0.8rem; margin:0;" onchange="applySort()"><option value="manual">手動(≡)</option><option value="name_asc">名前順</option><option value="e_asc">E座標順</option></select>
         <button class="btn-red" onclick="deleteAllPoints()" style="width:auto; padding:5px 10px; font-size:0.8rem; margin:0;">全削除</button>
@@ -366,19 +369,24 @@
       <p style="font-size:0.75rem; opacity:0.8;">※空欄の分隊は計算をスキップします。📍ボタンで現在地を取得できます。</p>
 
       <div id="settings-pri-area">
-        <label style="color:var(--primary); font-weight:bold;">第1分隊</label>
+        <div class="flex" style="justify-content:space-between; margin-bottom:10px;">
+           <label style="color:var(--primary); font-weight:bold; margin:0;">主陣地 (Pri)</label>
+           <button class="btn-red" style="width:auto; padding:4px 8px; margin:0; font-size:0.8rem;" onclick="clearPriPos()">🗑️ 一括削除</button>
+        </div>
+        
+        <label style="color:var(--primary); font-weight:bold; font-size:0.8rem;">第1分隊</label>
         <div class="flex" style="margin-bottom:10px;">
           <div><input type="number" id="s1-e" placeholder="E" onchange="formatCoord(this)"></div><div><input type="number" id="s1-n" placeholder="N" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s1-e', 's1-n')">📍取得</button>
         </div>
         
-        <label style="color:var(--primary); font-weight:bold;">第2分隊 (基準砲)</label>
+        <label style="color:var(--primary); font-weight:bold; font-size:0.8rem;">第2分隊 (基準砲)</label>
         <div class="flex" style="margin-bottom:10px;">
           <div><input type="number" id="s2-e" placeholder="E" onchange="formatCoord(this)"></div><div><input type="number" id="s2-n" placeholder="N" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s2-e', 's2-n')">📍取得</button>
         </div>
         
-        <label style="color:var(--primary); font-weight:bold;">第3分隊</label>
+        <label style="color:var(--primary); font-weight:bold; font-size:0.8rem;">第3分隊</label>
         <div class="flex" style="margin-bottom:10px;">
           <div><input type="number" id="s3-e" placeholder="E" onchange="formatCoord(this)"></div><div><input type="number" id="s3-n" placeholder="N" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s3-e', 's3-n')">📍取得</button>
@@ -386,21 +394,26 @@
       </div>
 
       <div id="settings-alt-area" class="hidden">
-        <label style="color:var(--warning); font-weight:bold;">第1分隊 (予備)</label>
+        <div class="flex" style="justify-content:space-between; margin-bottom:10px;">
+           <label style="color:var(--warning); font-weight:bold; margin:0;">予備陣地 (Alt)</label>
+           <button class="btn-red" style="width:auto; padding:4px 8px; margin:0; font-size:0.8rem;" onclick="clearAltPos()">🗑️ 一括削除</button>
+        </div>
+        
+        <label style="color:var(--warning); font-weight:bold; font-size:0.8rem;">第1分隊 (予備)</label>
         <div class="flex" style="margin-bottom:10px;">
           <div><input type="number" id="s1-alt-e" placeholder="E" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <div><input type="number" id="s1-alt-n" placeholder="N" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s1-alt-e', 's1-alt-n')">📍取得</button>
         </div>
         
-        <label style="color:var(--warning); font-weight:bold;">第2分隊 (基準砲 / 予備)</label>
+        <label style="color:var(--warning); font-weight:bold; font-size:0.8rem;">第2分隊 (基準砲 / 予備)</label>
         <div class="flex" style="margin-bottom:10px;">
           <div><input type="number" id="s2-alt-e" placeholder="E" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <div><input type="number" id="s2-alt-n" placeholder="N" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <button class="btn-gps" onclick="getGPSFor('s2-alt-e', 's2-alt-n')">📍取得</button>
         </div>
         
-        <label style="color:var(--warning); font-weight:bold;">第3分隊 (予備)</label>
+        <label style="color:var(--warning); font-weight:bold; font-size:0.8rem;">第3分隊 (予備)</label>
         <div class="flex" style="margin-bottom:10px;">
           <div><input type="number" id="s3-alt-e" placeholder="E" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
           <div><input type="number" id="s3-alt-n" placeholder="N" style="border-color:var(--warning);" onchange="formatCoord(this)"></div>
@@ -485,7 +498,6 @@
   };
   let charges = JSON.parse(localStorage.getItem('pwa_charges')) || defaultCharges;
   let savedPoints = JSON.parse(localStorage.getItem('mgrsPoints') || '[]');
-  let lastColor = localStorage.getItem('mgrsLastColor') || '#ff3b30';
   let isNightMode = localStorage.getItem('tacticalMode') === 'true';
   let editingId = null; 
   let mapOverlay = JSON.parse(localStorage.getItem('mgrsMapOverlay') || 'null');
@@ -501,7 +513,6 @@
     renderChargeSettings(); 
     updateSavedList(); 
     renderFOList(); 
-    document.getElementById('f6_color').value = lastColor;
     updatePosToggleUI();
   };
 
@@ -511,7 +522,6 @@
   }
   function pad4(num) { return String(Math.round(num)).padStart(4, '0'); }
 
-  // 3桁・4桁の自動補完（上桁読み取り）
   function formatCoord(el) {
     if(!el.value) return;
     let val = String(el.value).trim();
@@ -570,6 +580,25 @@
     }
   }
 
+  // 陣地クリア機能
+  function clearPriPos() {
+    if(confirm("主陣地(Pri)の座標データをすべて削除しますか？")) {
+      document.getElementById('s1-e').value = ""; document.getElementById('s1-n').value = "";
+      document.getElementById('s2-e').value = ""; document.getElementById('s2-n').value = "";
+      document.getElementById('s3-e').value = ""; document.getElementById('s3-n').value = "";
+      saveBasePos();
+    }
+  }
+  
+  function clearAltPos() {
+    if(confirm("予備陣地(Alt)の座標データをすべて削除しますか？")) {
+      document.getElementById('s1-alt-e').value = ""; document.getElementById('s1-alt-n').value = "";
+      document.getElementById('s2-alt-e').value = ""; document.getElementById('s2-alt-n').value = "";
+      document.getElementById('s3-alt-e').value = ""; document.getElementById('s3-alt-n').value = "";
+      saveBasePos();
+    }
+  }
+
   function saveBasePos() {
     const getV = (id) => document.getElementById(id).value === "" ? "" : Number(document.getElementById(id).value);
     sys.lat = getV('sys-lat') || 35.0;
@@ -579,7 +608,7 @@
     localStorage.setItem('pwa_sys', JSON.stringify(sys)); 
     updateAllDropdowns();
     drawMap(currentP1, currentP2, false);
-    alert("陣地データを保存しました。");
+    // UI表示用に保存時のアラートはスキップする（クリア時の挙動を滑らかにするため）
   }
 
   function togglePosMode() {
@@ -808,7 +837,6 @@
   // 測量ロジック (リストからの自動入力対応)
   // ==========================================
   
-  // 【改修】ドロップダウンの分離・包括機能
   function updateAllDropdowns() {
     // 1. FDC目標選択用 (目標リスト: savedPoints のみ)
     let fdcHtml = '<option value="">--- リストから選択 ---</option>'; 
@@ -844,7 +872,6 @@
     document.querySelectorAll('.pt-select').forEach(sel => sel.innerHTML = allHtml);
   }
 
-  // リスト選択からの情報抽出
   function getPointByValue(val) {
     if(!val) return null;
     if(val.startsWith('pt_')) { let id = parseInt(val.replace('pt_','')); return savedPoints.find(p => p.id === id); }
@@ -867,7 +894,7 @@
   }
 
   function saveSurveyResult(x, y, namePrefix) {
-    savedPoints.push({ id: Date.now(), name: namePrefix + "_" + pad5(x).substring(0,3), e: Math.round(x), n: Math.round(y), z: null, color: '#3b82f6' });
+    savedPoints.push({ id: Date.now(), name: namePrefix + "_" + pad5(x).substring(0,3), e: Math.round(x), n: Math.round(y), z: null, color: '#ef4444' });
     localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList();
   }
 
@@ -917,20 +944,21 @@
   // 座標管理ロジック (Points)
   // ==========================================
   function savePointManual() {
-    let name = document.getElementById('f6_name').value; let x = Number(document.getElementById('f6_x').value); let y = Number(document.getElementById('f6_y').value); let z = Number(document.getElementById('f6_z').value) || null; let color = document.getElementById('f6_color').value;
+    let name = document.getElementById('f6_name').value; let x = Number(document.getElementById('f6_x').value); let y = Number(document.getElementById('f6_y').value); let z = Number(document.getElementById('f6_z').value) || null; 
+    let color = '#ef4444'; // 手動登録時も強制的に赤で保存
     if (!name || !x || !y) { alert("入力エラー"); return; }
     if (editingId !== null) { let p = savedPoints.find(p => p.id === editingId); if (p) { p.name = name; p.e = x; p.n = y; p.z = z; p.color = color; } } 
-    else { savedPoints.push({ id: Date.now(), name: name, e: x, n: y, z: z, color: color }); lastColor = color; localStorage.setItem('mgrsLastColor', color); }
+    else { savedPoints.push({ id: Date.now(), name: name, e: x, n: y, z: z, color: color }); }
     cancelEdit(); localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); 
   }
   function editPoint(id) {
     let p = savedPoints.find(p => p.id === id); if (!p) return; editingId = id;
-    document.getElementById('f6_name').value = p.name; document.getElementById('f6_x').value = pad5(p.e); document.getElementById('f6_y').value = pad5(p.n); document.getElementById('f6_z').value = p.z || ""; document.getElementById('f6_color').value = p.color || lastColor;
+    document.getElementById('f6_name').value = p.name; document.getElementById('f6_x').value = pad5(p.e); document.getElementById('f6_y').value = pad5(p.n); document.getElementById('f6_z').value = p.z || ""; 
     document.getElementById('btn_manual_save').innerText = "更新"; document.getElementById('btn_manual_cancel').classList.remove('hidden');
   }
   function cancelEdit() { editingId = null; document.getElementById('f6_name').value = ""; document.getElementById('f6_x').value = ""; document.getElementById('f6_y').value = ""; document.getElementById('f6_z').value = ""; document.getElementById('btn_manual_save').innerText = "登録"; document.getElementById('btn_manual_cancel').classList.add('hidden'); }
   function deletePoint(id) { savedPoints = savedPoints.filter(p => p.id !== id); localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); }
-  function deleteAllPoints() { if(confirm("全削除しますか？")) { savedPoints = []; localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); } }
+  function deleteAllPoints() { if(confirm("目標を全削除しますか？")) { savedPoints = []; localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); } }
   function applySort() {
     let mode = document.getElementById('sort_select').value; if (mode === 'manual') return;
     if (mode === 'name_asc') { savedPoints.sort((a,b) => a.name.localeCompare(b.name,'ja')); } else if (mode === 'e_asc') { savedPoints.sort((a,b) => a.e - b.e); }
@@ -939,7 +967,7 @@
   function updateSavedList() {
     let html = "";
     savedPoints.forEach((p) => {
-      let pColor = p.color || '#ff3b30'; let zTxt = p.z ? ` Z:${p.z}m` : '';
+      let pColor = p.color || '#ef4444'; let zTxt = p.z ? ` Z:${p.z}m` : '';
       html += `<div class="list-item" data-id="${p.id}"><div class="drag-handle">≡</div><div style="flex:1; margin-left:5px;"><strong><span style="display:inline-block; width:12px; height:12px; background:${pColor}; border-radius:50%; margin-right:5px;"></span>${p.name}</strong><br><span style="font-size:0.85rem; color:#888;">E:${pad5(p.e)} N:${pad5(p.n)}${zTxt}</span></div><div style="display:flex; gap:5px;"><button class="btn-gray" style="padding:6px; margin:0;" onclick="editPoint(${p.id})">編</button><button class="btn-red" style="padding:6px; margin:0;" onclick="deletePoint(${p.id})">削</button></div></div>`;
     });
     document.getElementById('savedList').innerHTML = html; 
@@ -952,12 +980,52 @@
   listContainer.addEventListener('touchend', function(e) { if (!dragEl) return; dragEl.classList.remove('dragging'); dragEl = null; const items = document.querySelectorAll('#savedList .list-item'); let newArray = []; items.forEach(item => { const id = parseInt(item.getAttribute('data-id')); const point = savedPoints.find(p => p.id === id); if(point) newArray.push(point); }); savedPoints = newArray; localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); document.getElementById('sort_select').value = 'manual'; });
 
   function toggleBatchIO() { document.getElementById('batch_io_area').classList.toggle('hidden'); }
+  
+  // 【改修】インポート・エクスポートの統合・色コード廃止対応
   function importPoints() {
     let text = document.getElementById('io_text').value; if (!text.trim()) return; let lines = text.split('\n'); let added=0;
-    for (let line of lines) { let parts = line.trim().split(/[\s\t]+/); if (parts.length >= 3) { let name = parts[0]; let e = Number(parts[1]); let n = Number(parts[2]); if(e && n) { let color = parts[4] || parts[3] || lastColor; if(!color.startsWith('#')) color=lastColor; savedPoints.push({ id: Date.now()+added, name: name, e: e, n: n, z: null, color: color }); added++; } } }
-    localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); alert(`${added}件追加`); document.getElementById('io_text').value=""; toggleBatchIO();
+    let sysUpdated = false;
+    for (let line of lines) { 
+      let parts = line.trim().split(/[\s\t]+/); 
+      if (parts.length >= 3) { 
+        let name = parts[0]; let e = Number(parts[1]); let n = Number(parts[2]); 
+        if(e && n) { 
+          if (name === "S1_Pri") { sys.s1.e = e; sys.s1.n = n; sysUpdated=true; }
+          else if (name === "S2_Pri") { sys.s2.e = e; sys.s2.n = n; sysUpdated=true; }
+          else if (name === "S3_Pri") { sys.s3.e = e; sys.s3.n = n; sysUpdated=true; }
+          else if (name === "S1_Alt") { sys.s1.alt_e = e; sys.s1.alt_n = n; sysUpdated=true; }
+          else if (name === "S2_Alt") { sys.s2.alt_e = e; sys.s2.alt_n = n; sysUpdated=true; }
+          else if (name === "S3_Alt") { sys.s3.alt_e = e; sys.s3.alt_n = n; sysUpdated=true; }
+          else if (name.startsWith("FO_")) {
+              savedFOs.push({ id: Date.now()+added, name: name.replace("FO_", ""), e: e, n: n });
+          }
+          else {
+              savedPoints.push({ id: Date.now()+added, name: name, e: e, n: n, z: null, color: '#ef4444' }); 
+          }
+          added++; 
+        } 
+      } 
+    }
+    if(sysUpdated) { localStorage.setItem('pwa_sys', JSON.stringify(sys)); loadInputs(); }
+    localStorage.setItem('mgrsFOs', JSON.stringify(savedFOs));
+    localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); 
+    renderFOList(); updateSavedList(); 
+    alert(`読込完了 (処理行数: ${added})`); 
+    document.getElementById('io_text').value=""; toggleBatchIO();
   }
-  function exportPoints() { document.getElementById('io_text').value = savedPoints.map(p => `${p.name} ${pad5(p.e)} ${pad5(p.n)} - ${p.color || '#ff3b30'}`).join('\n'); }
+  
+  function exportPoints() { 
+    let lines = [];
+    if(sys.s1.e) lines.push(`S1_Pri ${pad5(sys.s1.e)} ${pad5(sys.s1.n)}`);
+    if(sys.s2.e) lines.push(`S2_Pri ${pad5(sys.s2.e)} ${pad5(sys.s2.n)}`);
+    if(sys.s3.e) lines.push(`S3_Pri ${pad5(sys.s3.e)} ${pad5(sys.s3.n)}`);
+    if(sys.s1.alt_e) lines.push(`S1_Alt ${pad5(sys.s1.alt_e)} ${pad5(sys.s1.alt_n)}`);
+    if(sys.s2.alt_e) lines.push(`S2_Alt ${pad5(sys.s2.alt_e)} ${pad5(sys.s2.alt_n)}`);
+    if(sys.s3.alt_e) lines.push(`S3_Alt ${pad5(sys.s3.alt_e)} ${pad5(sys.s3.alt_n)}`);
+    savedFOs.forEach(fo => lines.push(`FO_${fo.name} ${pad5(fo.e)} ${pad5(fo.n)}`));
+    savedPoints.forEach(p => lines.push(`${p.name} ${pad5(p.e)} ${pad5(p.n)}`)); // 色コードを省略
+    document.getElementById('io_text').value = lines.join('\n'); 
+  }
 
   // ==========================================
   // マップ・図上測定機能 (高低差・垂直角対応)
@@ -995,7 +1063,6 @@
   }
   function resetMapView() { drawMap(currentP1, currentP2, true); }
 
-  // 【改修】両陣地の同時プロット
   function drawMap(highlightP1 = null, highlightP2 = null, resetView = false) {
     let canvas = document.getElementById('mapCanvas'); let ctx = canvas.getContext('2d'); let w = canvas.width = canvas.offsetWidth; let h = canvas.height = canvas.offsetHeight;
     const style = getComputedStyle(document.body); const cBg = style.getPropertyValue('--map-bg').trim(); const cGrid1km = style.getPropertyValue('--map-grid-1km').trim(); const cGrid100m = style.getPropertyValue('--map-grid-100m').trim(); const cText = style.getPropertyValue('--map-text').trim(); const cGridHalo = style.getPropertyValue('--map-grid-halo').trim(); const cTextHalo = style.getPropertyValue('--map-text-halo').trim();
@@ -1003,12 +1070,10 @@
 
     let pointsToBound = [...savedPoints]; 
     
-    // 主陣地 (Pri) を常に追加 (青色)
     if(sys.s1.e && sys.s1.n) pointsToBound.push({e: Number(sys.s1.e), n: Number(sys.s1.n), name:"S1(Pri)", color:"#3b82f6"}); 
     if(sys.s2.e && sys.s2.n) pointsToBound.push({e: Number(sys.s2.e), n: Number(sys.s2.n), name:"S2(Pri)", color:"#3b82f6"}); 
     if(sys.s3.e && sys.s3.n) pointsToBound.push({e: Number(sys.s3.e), n: Number(sys.s3.n), name:"S3(Pri)", color:"#3b82f6"}); 
     
-    // 予備陣地 (Alt) も常に追加 (オレンジ/警告色)
     if(sys.s1.alt_e && sys.s1.alt_n) pointsToBound.push({e: Number(sys.s1.alt_e), n: Number(sys.s1.alt_n), name:"S1(Alt)", color:"#f59e0b"}); 
     if(sys.s2.alt_e && sys.s2.alt_n) pointsToBound.push({e: Number(sys.s2.alt_e), n: Number(sys.s2.alt_n), name:"S2(Alt)", color:"#f59e0b"}); 
     if(sys.s3.alt_e && sys.s3.alt_n) pointsToBound.push({e: Number(sys.s3.alt_e), n: Number(sys.s3.alt_n), name:"S3(Alt)", color:"#f59e0b"}); 
